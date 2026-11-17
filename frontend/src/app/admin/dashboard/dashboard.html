@@ -1,0 +1,70 @@
+<div class="min-h-screen bg-crema">
+  <!-- Barra superior -->
+  <header class="bg-nogal px-6 py-5 text-white">
+    <div class="mx-auto flex max-w-7xl items-center justify-between">
+      <h1 class="font-brand text-xl font-bold">Toco Madera | Administración</h1>
+
+      <a
+        routerLink="/"
+        class="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-nogal"
+      >
+        Volver a tienda
+      </a>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-6 py-10">
+    <div class="mb-8">
+      <h2 class="text-3xl font-bold text-nogal">Dashboard</h2>
+
+      <p class="mt-2 text-gray-600">Indicadores comerciales y operativos.</p>
+    </div>
+
+    <!-- KPIs -->
+    <section class="mb-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <article class="rounded-xl bg-white p-6 shadow-sm">
+        <p class="text-sm text-gray-500">Ventas confirmadas</p>
+        <h3 class="mt-3 text-3xl font-bold text-nogal">
+          {{ ventasConfirmadas | currency:'MXN' }}
+        </h3>
+      </article>
+
+      <article class="rounded-xl bg-white p-6 shadow-sm">
+        <p class="text-sm text-gray-500">Pedidos pendientes</p>
+        <h3 class="mt-3 text-3xl font-bold text-nogal">
+          {{ pedidosPendientes }}
+        </h3>
+      </article>
+
+      <article class="rounded-xl bg-white p-6 shadow-sm">
+        <p class="text-sm text-gray-500">Clientes registrados</p>
+        <h3 class="mt-3 text-3xl font-bold text-nogal">
+          {{ clientesRegistrados }}
+        </h3>
+      </article>
+
+      <article class="rounded-xl bg-white p-6 shadow-sm">
+        <p class="text-sm text-gray-500">Unidades vendidas</p>
+        <h3 class="mt-3 text-3xl font-bold text-nogal">
+          {{ productosVendidos }}
+        </h3>
+      </article>
+    </section>
+
+    <!-- Gráfica principal -->
+    <section class="rounded-xl bg-white p-6 shadow-sm">
+      <h3 class="mb-2 text-xl font-bold text-nogal">
+        Ventas durante la semana
+      </h3>
+
+      <p class="mb-5 text-sm text-gray-500">
+        Sin datos registrados. La conexión a MySQL se realizará en una etapa
+        posterior.
+      </p>
+
+      <div class="relative h-72 w-full">
+        <canvas #ventasChart aria-label="Gráfica de ventas"> </canvas>
+      </div>
+    </section>
+  </main>
+</div>
