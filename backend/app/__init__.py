@@ -8,6 +8,8 @@ from app.extensions import db
 from app.routes.health_routes import health_bp
 from app.routes.dashboard_routes import dashboard_bp
 
+from app.routes.producto_routes import productos_bp
+
 
 def create_app():
 
@@ -41,6 +43,7 @@ def create_app():
     # Registrar Blueprints
     app.register_blueprint(health_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(productos_bp)#nuevo agregado 3.5
 
     # IMPORTANTE: esta línea debe ejecutarse siempre
     return app

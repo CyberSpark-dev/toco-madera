@@ -1,39 +1,194 @@
+<!-- =================================================
+     TOCO MADERA - PÁGINA DE INICIO DEL CLIENTE
+     Archivo: frontend/src/app/cliente/inicio/inicio.html
+
+     Esta vista muestra:
+     1. Navegación principal.
+     2. Identidad de la empresa.
+     3. Catálogo conectado a MySQL mediante Flask.
+     4. Estados de carga, error y catálogo vacío.
+================================================= -->
+
 <div class="min-h-screen bg-crema">
+  <!-- ==========================================
+       1. BARRA DE NAVEGACIÓN
+  ========================================== -->
+
   <header class="bg-white shadow-sm">
     <nav class="mx-auto flex max-w-7xl items-center justify-between p-5">
-      <a routerLink="/" class="font-brand text-2xl font-bold text-nogal">
-        Toco Madera
-      </a>
+      <!-- Nombre comercial -->
+      <a routerLink="/" class="font-brand text-2xl font-bold text-nogal"> Toco Madera </a>
 
-      <a routerLink="/admin/dashboard" class="text-sm text-terracota">
+      <!--
+        Acceso temporal al dashboard.
+
+        IMPORTANTE:
+        Este enlace es solo para desarrollo.
+        Posteriormente implementaremos login,
+        autenticación y autorización de roles.
+      -->
+      <a routerLink="/admin/dashboard" class="text-sm text-terracota hover:underline">
         Vista de administración (prueba)
       </a>
     </nav>
   </header>
 
+  <!-- ==========================================
+       2. CONTENIDO PRINCIPAL
+  ========================================== -->
+
   <main class="mx-auto max-w-7xl px-6 py-16">
+    <!-- PRESENTACIÓN DE LA EMPRESA -->
+
     <section class="mb-16 text-center">
       <h1 class="mb-5 font-brand text-5xl font-bold text-nogal">
         {{ nombreEmpresa }}
       </h1>
 
-      <p class="mb-6 text-2xl text-terracota">{{ eslogan }}</p>
+      <p class="mb-6 text-2xl text-terracota">
+        {{ eslogan }}
+      </p>
 
-      <p class="mx-auto max-w-2xl text-lg">
-        Fabricamos artículos de madera personalizados mediante grabado
-        artesanal.
+      <p class="mx-auto max-w-2xl text-lg text-gray-700">
+        Fabricamos artículos de madera personalizados mediante grabado artesanal.
       </p>
     </section>
 
-    <h2 class="mb-8 text-3xl font-bold text-nogal">Nuestros productos</h2>
+    <!-- ==========================================
+         3. CATÁLOGO DE PRODUCTOS
+    ========================================== -->
 
-    <section class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      @for (producto of productos; track producto) {
-      <article class="rounded-xl bg-white p-6 shadow-sm">
-        <h3 class="mb-3 text-xl font-semibold text-nogal">{{ producto }}</h3>
+    <section id="catalogo">
+      <!-- Encabezado del catálogo -->
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold text-nogal">Nuestros productos</h2>
 
-        <p class="text-sm text-gray-600">Artículo artesanal personalizable.</p>
-      </article>
+        <p class="mt-2 text-gray-600">
+          Conoce nuestros artículos artesanales y personalízalos a tu estilo.
+        </p>
+      </div>
+
+      <!-- ======================================
+           ESTADO 1: CARGANDO PRODUCTOS
+      ====================================== -->
+
+      @if (cargandoProductos()) {
+        <div role="status" class="rounded-xl bg-white p-10 text-center shadow-sm">
+          <p class="text-lg font-semibold text-nogal">Cargando productos...</p>
+
+          <p class="mt-2 text-sm text-gray-500">Estamos consultando nuestro catálogo.</p>
+        </div>
+      }
+
+      <!-- ======================================
+           ESTADO 2: ERROR DE CONEXIÓN
+      ====================================== -->
+
+      @else if (errorProductos()) {
+        <div role="alert" class="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
+          <h3 class="text-xl font-semibold text-red-700">No pudimos cargar el catálogo</h3>
+
+          <p class="mt-3 text-sm text-red-600">
+            {{ errorProductos() }}
+          </p>
+
+          <!-- Vuelve a consultar el endpoint Flask -->
+          <button
+            type="button"
+            (click)="cargarProductos()"
+            class="mt-5 rounded-lg bg-terracota px-6 py-3 font-semibold text-white hover:bg-nogal"
+          >
+            Intentar nuevamente
+          </button>
+        </div>
+      }
+
+      <!-- ======================================
+           ESTADO 3: CATÁLOGO VACÍO
+      ====================================== -->
+
+      @else if (productos().length === 0) {
+        <div class="rounded-xl bg-white p-10 text-center shadow-sm">
+          <h3 class="text-xl font-semibold text-nogal">No hay productos disponibles</h3>
+
+          <p class="mt-3 text-gray-600">
+            Próximamente tendremos nuevos artículos de madera para ti.
+          </p>
+        </div>
+      }
+
+      <!-- ======================================
+           ESTADO 4: PRODUCTOS DESDE MYSQL
+      ====================================== -->
+
+      @else {
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <!--
+            productos() obtiene los datos de la signal.
+
+            track producto.id_producto utiliza la
+            clave primaria para identificar cada
+            elemento de manera única.
+          -->
+          @for (producto of productos(); track producto.id_producto) {
+            <article
+              class="overflow-hidden rounded-xl bg-white shadow-sm transition-shadow duration-200 hover:shadow-lg"
+            >
+              <!--
+                Espacio provisional para la fotografía.
+
+                Las imágenes reales se incorporarán
+                posteriormente desde imagenes_producto.
+              -->
+              <div class="flex h-44 items-center justify-center bg-[#F9E9D5] px-6 text-center">
+                <span class="font-brand text-xl font-semibold text-nogal">
+                  {{ producto.nombre }}
+                </span>
+              </div>
+
+              <!-- INFORMACIÓN COMERCIAL -->
+
+              <div class="p-6">
+                <!-- SKU registrado en MySQL -->
+                <p class="mb-2 text-xs uppercase tracking-wide text-gray-500">
+                  Código: {{ producto.sku }}
+                </p>
+
+                <!-- Nombre del producto -->
+                <h3 class="mb-3 text-xl font-semibold text-nogal">
+                  {{ producto.nombre }}
+                </h3>
+
+                <!-- Descripción del artículo -->
+                <p class="mb-5 min-h-12 text-sm text-gray-600">
+                  {{ producto.descripcion || 'Artículo artesanal de madera.' }}
+                </p>
+
+                <!-- Precio obtenido desde MySQL -->
+                <p class="mb-4 text-2xl font-bold text-terracota">
+                  {{ producto.precio_lista | currency: 'MXN' : 'symbol' : '1.2-2' }}
+                </p>
+
+                <!-- Indicador de personalización -->
+                @if (producto.permite_grabado) {
+                  <div class="rounded-md bg-crema px-3 py-2">
+                    <p class="text-sm text-nogal">Personalización con grabado disponible</p>
+
+                    <p class="mt-1 text-xs text-gray-600">
+                      Hasta
+                      {{ producto.max_caracteres_grabado }}
+                      caracteres.
+                    </p>
+                  </div>
+                } @else {
+                  <div class="rounded-md bg-gray-100 px-3 py-2">
+                    <p class="text-sm text-gray-600">Producto sin grabado personalizado.</p>
+                  </div>
+                }
+              </div>
+            </article>
+          }
+        </div>
       }
     </section>
   </main>
