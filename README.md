@@ -4,7 +4,7 @@
 
 **Toco Madera** es una aplicación web progresiva (PWA) académica orientada a una empresa de transformación artesanal de madera en León, Guanajuato, México. Permite ofrecer productos de madera personalizables a clientes y centralizar, mediante un panel protegido, las operaciones administrativas del negocio.
 
-**Estado de desarrollo:** Etapa **3.15** terminada y probada funcionalmente en entorno local. La aplicación está **en desarrollo** y no debe considerarse lista para producción.
+**Estado de desarrollo:** Etapa **3.16** cerrada tras la validación manual de diez pruebas del CRUD de materiales en entorno local. La aplicación está **en desarrollo** y no debe considerarse lista para producción.
 
 ## 1. Objetivo y alcance
 
@@ -75,27 +75,32 @@ MySQL 8
 
 ## 5. Estructura principal del proyecto
 
-La siguiente estructura muestra los componentes relevantes conocidos hasta la Etapa 3.15. Pueden existir otros modelos, Blueprints, scripts y recursos dentro del repositorio.
+Esta estructura reúne las rutas y componentes **conocidos hasta la Etapa 3.16**. Es una referencia de los archivos trabajados; el repositorio puede contener otros módulos, modelos, archivos SQL y recursos.
 
 ```text
 toco-madera/
 ├── README.md
 ├── backend/
 │   ├── run.py
-│   ├── requirements.txt                # Si se mantiene el archivo de dependencias
-│   ├── .venv/                          # Local, no versionar
+│   ├── requirements.txt                 # Si existe en el repositorio
 │   ├── scripts/
 │   │   └── crear_admin.py
+│   ├── .venv/                           # Local; nunca versionar
 │   └── app/
-│       ├── __init__.py                # create_app()
-│       ├── extensions.py              # db y otras extensiones
-│       ├── models/
-│       │   ├── producto.py
-│       │   └── categoria.py
+│       ├── __init__.py                 # Application Factory y Blueprints
+│       ├── config.py
+│       ├── extensions.py               # SQLAlchemy y JWT
+│       ├── models/                     # Incluye modelos de productos, categorías y usuarios
 │       ├── routes/
-│       │   └── admin_producto_routes.py
+│       │   ├── health_routes.py
+│       │   ├── dashboard_routes.py
+│       │   ├── producto_routes.py
+│       │   ├── auth_routes.py
+│       │   ├── admin_producto_routes.py
+│       │   ├── admin_proveedor_routes.py
+│       │   └── admin_material_routes.py
 │       └── utils/
-│           └── permisos.py             # @admin_required
+│           └── permisos.py            # @admin_required
 └── frontend/
     ├── angular.json
     ├── package.json
@@ -105,38 +110,27 @@ toco-madera/
             ├── app.config.ts
             ├── app.routes.ts
             ├── auth/
-            │   ├── login/
-            │   │   ├── login.ts
-            │   │   ├── login.html
-            │   │   └── login.css
-            │   └── registro/
-            │       ├── registro.ts
-            │       ├── registro.html
-            │       └── registro.css
+            │   ├── login/              # login.ts, login.html, login.css
+            │   └── registro/           # registro.ts, registro.html, registro.css
             ├── cliente/
-            │   └── inicio/
-            │       ├── inicio.ts
-            │       ├── inicio.html
-            │       └── inicio.css
+            │   └── inicio/             # inicio.ts, inicio.html, inicio.css
             ├── core/
-            │   ├── guards/
-            │   │   └── admin.guard.ts
-            │   ├── interceptors/
-            │   │   └── auth.interceptor.ts
+            │   ├── guards/admin.guard.ts
+            │   ├── interceptors/auth.interceptor.ts
             │   └── services/
             │       ├── api.ts
             │       ├── auth.ts
-            │       └── admin-productos.ts
+            │       ├── admin-productos.ts
+            │       ├── admin-proveedores.ts
+            │       └── admin-materiales.ts
             └── admin/
-                ├── dashboard/
-                │   ├── dashboard.ts
-                │   ├── dashboard.html
-                │   └── dashboard.css
-                └── productos/
-                    ├── productos.ts
-                    ├── productos.html
-                    └── productos.css
+                ├── dashboard/          # dashboard.ts, dashboard.html, dashboard.css
+                ├── productos/          # productos.ts, productos.html, productos.css
+                ├── proveedores/        # proveedores.ts, proveedores.html, proveedores.css
+                └── materiales/         # materiales.ts, materiales.html, materiales.css
 ```
+
+**Criterio de separación:** los servicios HTTP de Angular están en `core/services`; las vistas administrativas están en `admin`; los endpoints se organizan por Blueprint en `backend/app/routes`. Los formularios de catálogo no realizan cambios directos de inventario.
 
 ## 6. Requisitos de desarrollo
 
@@ -150,7 +144,7 @@ toco-madera/
 ### 6.1. Clonar o abrir el proyecto
 
 ```powershell
-git clone <URL_DEL_REPOSITORIO>
+git clone https://github.com/CyberSpark-dev/toco-madera.git
 cd toco-madera
 ```
 
@@ -229,8 +223,10 @@ El frontend se ha probado localmente en `http://localhost:4200`.
 | `/registro` | Registro de cliente | Público |
 | `/admin/dashboard` | Panel administrativo y gráfica | ADMIN |
 | `/admin/productos` | Gestión de productos | ADMIN |
+| `/admin/proveedores` | Gestión de proveedores | ADMIN |
+| `/admin/materiales` | Gestión de materias primas | ADMIN |
 
-El guard `adminGuard` protege la navegación hacia `/admin/dashboard` y `/admin/productos`. La API aplica una comprobación adicional del rol en el servidor.
+El guard `adminGuard` protege la navegación hacia `/admin/dashboard`, `/admin/productos`, `/admin/proveedores` y `/admin/materiales`. La API aplica una comprobación adicional del rol en el servidor.
 
 ## 8. Endpoints REST implementados o preparados
 
@@ -263,6 +259,57 @@ Prefijo local: `http://127.0.0.1:5000/api/v1`
 | PATCH | `/admin/productos/{id_producto}/estado` | Activar o desactivar producto |
 
 Todos los endpoints del grupo `/admin/productos` exigen JWT y privilegios de administrador.
+
+### 8.4. Proveedores administrativos — Etapa 3.16
+
+| Método | Ruta | Función |
+|---|---|---|
+| GET | `/admin/proveedores/` | Consultar proveedores activos e inactivos |
+| POST | `/admin/proveedores/` | Registrar proveedor |
+| PUT | `/admin/proveedores/{id_proveedor}` | Editar datos de contacto y comerciales |
+| PATCH | `/admin/proveedores/{id_proveedor}/estado` | Activar/desactivar sin borrar el historial |
+
+**Ejemplo de registro:**
+
+```json
+{
+  "nombre": "Proveedor de ejemplo",
+  "contacto": "Persona de contacto",
+  "telefono": "4770000000",
+  "correo": "prueba@example.com",
+  "direccion": "León, Guanajuato",
+  "sitio_web": ""
+}
+```
+
+La tabla `proveedores` tiene `id_proveedor`, `nombre`, `contacto`, `telefono`, `correo`, `direccion`, `sitio_web` y `activo`. Se relaciona mediante `id_proveedor` con `compras` y `cotizaciones_material`. La desactivación es lógica; no se eliminan las operaciones históricas.
+
+### 8.5. Materias primas y unidades — Etapa 3.16
+
+| Método | Ruta | Función |
+|---|---|---|
+| GET | `/admin/materiales/` | Listar materiales existentes, incluyendo inactivos |
+| GET | `/admin/materiales/unidades` | Consultar unidades de medida válidas |
+| POST | `/admin/materiales/` | Crear material |
+| PUT | `/admin/materiales/{id_material}` | Actualizar datos editables |
+| PATCH | `/admin/materiales/{id_material}/estado` | Activar/desactivar material |
+
+**Ejemplo de registro:**
+
+```json
+{
+  "sku": "PRUEBA_MAT_001",
+  "nombre": "Madera de prueba",
+  "descripcion": "Registro temporal para validar el CRUD",
+  "id_unidad": 1,
+  "stock_minimo": "5.0000"
+}
+```
+
+El `id_unidad` anterior es **ilustrativo**: siempre se debe seleccionar uno que realmente exista en `/admin/materiales/unidades`. El `stock_minimo` se transmite como cadena decimal de hasta cuatro decimales. Las peticiones de cambio de estado reciben `{"activo": false}` o `{"activo": true}`.
+
+**Seguridad común:** los endpoints de los grupos `/admin/proveedores` y `/admin/materiales` exigen JWT y autorización `ADMIN` en Flask. El guard Angular es una barrera de navegación adicional, no la autorización definitiva.
+
 
 **Ejemplo de cuerpo JSON para registro o edición:**
 
@@ -298,45 +345,74 @@ Los identificadores de categoría y los SKU del ejemplo deben adaptarse a los da
 6. La desactivación de productos es **lógica**: se cambia el campo `activo`, sin borrar el historial ni las relaciones de la base de datos.
 7. Los artículos inactivos no deben ofrecerse en el catálogo público.
 8. Los datos comerciales del producto se administran por separado de las existencias, lotes y movimientos de inventario.
-9. Para pedidos personalizados se contempla un anticipo del **50 %** y liquidación contra entrega, o pago completo al realizar el pedido. La pasarela/pago es **simulado** en el alcance académico previsto.
-10. Los pedidos grandes requieren un plazo de fabricación/entrega, mientras que los productos ya disponibles pueden entregarse antes, según existencias y operación.
+9. Los proveedores conservan sus compras y cotizaciones históricas; se desactivan lógicamente mediante `activo`.
+10. Los materiales utilizan un SKU único de hasta 40 caracteres y un nombre obligatorio de hasta 150 caracteres; su descripción es opcional y tiene un máximo de 250 caracteres.
+11. `materiales.id_unidad` es una clave foránea que referencia `unidades_medida.id_unidad`; únicamente se aceptan unidades existentes.
+12. `materiales.stock_minimo` es `DECIMAL(14,4)`, no negativo, y constituye un **umbral de reabastecimiento**, no la existencia actual en almacén.
+13. Las operaciones de alta/edición de materiales no insertan entradas ni salidas en `movimientos_material`. Estas transacciones corresponden a un módulo posterior.
+14. Los materiales y proveedores pueden desactivarse sin eliminar físicamente registros asociados a compras, cotizaciones o producción.
+15. Para pedidos personalizados se contempla un anticipo del **50 %** y liquidación contra entrega, o pago completo al realizar el pedido. La pasarela/pago es **simulado** en el alcance académico previsto.
+16. Los pedidos grandes requieren un plazo de fabricación/entrega, mientras que los productos ya disponibles pueden entregarse antes, según existencias y operación.
 
 Las reglas de pedidos, anticipos e inventario están documentadas como **alcance funcional previsto**; no deben confundirse con módulos ya implementados.
 
-## 10. Estado de los módulos al cierre de la Etapa 3.15
+## 10. Estado de los módulos al cierre de la Etapa 3.16
 
-| Módulo o capacidad | Estado |
+| Módulo o capacidad | Estado al cierre |
 |---|---|
-| Estructura de Angular + Tailwind + Flowbite | Implementada |
-| API Flask + conexión con MySQL | Implementada |
-| Modelo relacional y datos iniciales | Diseñados / cargados durante etapas previas |
-| Catálogo público de productos | Implementado |
-| Registro e inicio de sesión | Implementados y probados |
-| JWT, roles, interceptor y guard administrativo | Implementados |
-| Dashboard administrativo | Implementado; estadísticas todavía provisionales |
-| Gráfica con Chart.js | Implementada con valores iniciales de ejemplo |
+| Estructura Angular 22 + Tailwind CSS 4 + Flowbite | Implementada |
+| Backend Flask + Blueprints + conexión MySQL | Implementado |
+| Base relacional y catálogo inicial de seis productos | Cargados en fases previas |
+| Catálogo público | Implementado |
+| Registro y login de clientes y administrador | Implementados |
+| JWT, roles, guard Angular, interceptor y decorador de permisos | Implementados |
+| Dashboard administrativo | Funcional; indicadores comerciales aún provisionales |
+| Gráfica semanal con Chart.js | Visible, datos de ejemplo |
 | Cierre de sesión local | Implementado |
-| CRUD administrativo de productos | **Implementado y validado en Etapa 3.15** |
-| Consulta de categorías para formulario | Implementada y validada |
-| Carrito y simulador de pago | Pendiente de integración completa |
+| CRUD de productos, categorías, búsqueda y filtros | **Etapa 3.15: validada** |
+| CRUD de proveedores, búsqueda y filtros | **Etapa 3.16: implementado; registro comprobado** |
+| CRUD de materias primas y selector de unidades | **Etapa 3.16: diez pruebas funcionales confirmadas** |
+| Carrito, personalización y pago simulado | Pendiente de integración completa |
 | Pedidos e historial del cliente | Pendiente |
-| Materias primas, proveedores y compras | Pendiente |
-| Inventarios, movimientos y reservas | Pendiente |
-| Producción y recetas | Pendiente |
-| Indicadores estadísticos reales desde MySQL | Pendiente |
-| Pruebas automatizadas, endurecimiento y despliegue | Pendiente |
+| Compras y recepción de materiales | Pendiente |
+| Existencias, movimientos, alertas y reservas | Pendiente |
+| Recetas/listas de materiales y órdenes de producción | Pendiente |
+| Estadísticas reales desde MySQL | Pendiente |
+| Pruebas automatizadas, auditoría y despliegue | Pendiente |
 
-### Detalle de la Etapa 3.15 terminada
+### 10.1. Entregables de la Etapa 3.15
 
-- Servicio Angular `AdminProductos` que centraliza peticiones REST.
-- Pantalla `admin/productos` para listar, buscar y filtrar productos.
-- Registro de productos con categoría, SKU, nombre, descripción, precio y opciones de grabado.
-- Edición de datos comerciales sin alterar el inventario.
-- Activación y desactivación con confirmación visual.
-- Mensajes de error y éxito; opción de reintentar la carga de categorías.
-- Desplazamiento automático al formulario de alta o edición.
-- Protección de rutas administrativas mediante guard en Angular y decorador en Flask.
-- Comprobaciones manuales de funcionamiento confirmadas por el equipo en entorno local.
+- CRUD protegido de productos y consulta de categorías.
+- Registro, edición, activación y desactivación lógica.
+- Tabla de productos, búsqueda, filtro, validaciones y mensajes de error.
+- Desplazamiento automático al formulario de creación/edición.
+
+### 10.2. Entregables de la Etapa 3.16
+
+- Blueprint `admin_proveedor_routes.py` para GET, POST, PUT y PATCH.
+- Servicio Angular `admin-proveedores.ts` y pantalla `/admin/proveedores`.
+- Tabla administrativa de proveedores, búsqueda, filtros, formularios y cambio de estado.
+- Confirmación de un registro de proveedor de prueba en MySQL desde Angular.
+- Verificación del esquema de `materiales` y su relación con `unidades_medida`.
+- Blueprint `admin_material_routes.py` con GET de materiales, GET de unidades, POST, PUT y PATCH.
+- Servicio Angular `admin-materiales.ts` y pantalla `/admin/materiales`.
+- Tabla de materiales, búsqueda, filtro activo/inactivo, formulario y confirmación de cambio de estado.
+- Validaciones de SKU, descripción, unidad real y stock mínimo `DECIMAL(14,4)`.
+- Diez comprobaciones funcionales del módulo de materiales confirmadas por el equipo.
+
+### 10.3. Estructura verificada en MySQL para materiales
+
+| Columna | Tipo | Regla |
+|---|---|---|
+| `id_material` | `BIGINT UNSIGNED` | PK autoincremental |
+| `sku` | `VARCHAR(40)` | Obligatorio, único |
+| `nombre` | `VARCHAR(150)` | Obligatorio |
+| `descripcion` | `VARCHAR(250)` | Puede ser NULL |
+| `id_unidad` | `SMALLINT UNSIGNED` | FK obligatoria a `unidades_medida.id_unidad` |
+| `stock_minimo` | `DECIMAL(14,4)` | No nulo, predeterminado `0.0000` |
+| `activo` | `TINYINT(1)` | No nulo, predeterminado `1` |
+
+Antes del CRUD había diez materiales base observados en MySQL, entre ellos pino, triplay, pegamento, barniz, lijas, ganchos, tornillos, protector de marco, empaque y base de rodillo. Los registros de prueba posteriores pueden aumentar el total; por eso no debe utilizarse el número diez como conteo fijo del estado actual.
 
 ## 11. Pruebas manuales realizadas / a mantener
 
@@ -360,6 +436,31 @@ Las reglas de pedidos, anticipos e inventario están documentadas como **alcance
 
 **Resultado reportado al cierre de la Etapa 3.15:** se verificó el funcionamiento del formulario nuevo, la edición y el guardado, después de corregir la carga/visibilidad del formulario. No se afirma que exista todavía cobertura de pruebas automatizadas.
 
+### Proveedores — Etapa 3.16
+
+- Abrir `/admin/proveedores` con sesión administrativa.
+- Consultar la lista existente (inicialmente la tabla estaba vacía).
+- Registrar un proveedor de prueba y comprobar su aparición en la tabla MySQL/Angular.
+- Verificar búsqueda, filtros, edición y cambio de estado al finalizar la integración. **La evidencia conversacional confirma explícitamente el registro; no se declara aquí como probada toda la matriz de proveedores.**
+
+### Materias primas — Etapa 3.16
+
+Las **diez pruebas funcionales** fueron confirmadas por el equipo:
+
+1. Flask reconoce las rutas CRUD de materiales.
+2. Angular compila correctamente.
+3. La pantalla muestra los materiales existentes.
+4. El selector presenta unidades reales de MySQL.
+5. «Nuevo material» abre el formulario.
+6. Se puede registrar un material de prueba.
+7. Se puede editar su descripción y stock mínimo.
+8. Se puede desactivar y reactivar.
+9. Los materiales originales permanecen intactos.
+10. Sin JWT no se permite modificar materiales.
+
+Estas comprobaciones son **manuales reportadas por el equipo**, no una suite automatizada ni una auditoría de seguridad independiente.
+
+
 Comandos útiles:
 
 ```powershell
@@ -381,15 +482,25 @@ python -c "from app import create_app; app=create_app(); print(app.url_map)"
 - Revisar CORS, expiración de tokens, variables de entorno, manejo de errores y auditoría antes de desplegar.
 - El endpoint de dashboard de estado no equivale a que los indicadores de negocio ya estén conectados a consultas estadísticas reales.
 
-## 13. Control de versiones
+## 13. Control de versiones y repositorio actual
 
-Se utiliza Git y GitHub. Antes de registrar una etapa:
+**Repositorio principal desde la Etapa 3.16:** [CyberSpark-dev/toco-madera](https://github.com/CyberSpark-dev/toco-madera), rama `main`, remoto `origin` mediante HTTPS (sin llave SSH).
+
+El remoto académico anterior puede permanecer bajo el nombre `anterior` como respaldo. Para confirmar el destino antes de publicar:
+
+```powershell
+git remote -v
+git branch --show-current
+git status
+```
+
+No utilizar `git init`, `git remote rename` ni `git push --force` para la publicación ordinaria. Antes de registrar una etapa:
 
 ```powershell
 # Desde la raíz del repositorio
 git status
 git add README.md backend frontend
-git commit -m "feat: completar etapa 3.15 CRUD administrativo de productos"
+git commit -m "feat: completar etapa 3.16 proveedores y materiales"
 git push origin main
 ```
 
@@ -397,13 +508,12 @@ Revisar siempre `git status` y `git diff --cached` antes del commit para asegura
 
 ## 14. Próximas etapas
 
-1. Administración de materias primas y proveedores.
-2. Compras y recepción de materiales.
-3. Inventarios, movimientos, existencias y alertas.
-4. Recetas/listas de materiales y órdenes de producción.
-5. Pedidos, personalización, carrito y pagos simulados.
-6. Indicadores reales y gráficas desde MySQL.
-7. Pruebas integrales, accesibilidad, seguridad, PWA y preparación de entrega.
+1. Compras y recepción de materiales (siguiente etapa sugerida: **3.17**).
+2. Inventarios, movimientos, existencias y alertas.
+3. Recetas/listas de materiales y órdenes de producción.
+4. Pedidos, personalización, carrito y pagos simulados.
+5. Indicadores reales y gráficas desde MySQL.
+6. Pruebas integrales, accesibilidad, seguridad, PWA y preparación de entrega.
 
 El orden exacto puede ajustarse según dependencias y prioridades del equipo, manteniendo la arquitectura Angular + Flask + MySQL.
 
@@ -414,9 +524,12 @@ El orden exacto puede ajustarse según dependencias y prioridades del equipo, ma
 | 3.13 | Backend Flask, MySQL, modelos y autenticación base |
 | 3.14 | Integración de login/registro Angular, JWT, guard, dashboard y cierre de sesión |
 | **3.15** | **CRUD administrativo de productos: consulta, categorías, alta, edición, búsqueda, filtros y cambio de estado; validación funcional completada** |
+| **3.16** | **Proveedores y materias primas: CRUD protegido, formularios Angular, unidad de medida, validaciones de stock mínimo y diez pruebas confirmadas del módulo materiales** |
 
 ---
 
 **Política de documentación:** al terminar cada etapa numerada completa se actualiza **todo este README general**, con información verificable sobre funcionalidades terminadas, pruebas realizadas y pendientes. No se documentan como concluidos módulos aún no construidos.
 
 **Proyecto académico — Toco Madera, León, Guanajuato, México.**
+
+**Actualización documental:** 19 de noviembre de 2026 — cierre de la Etapa 3.16.

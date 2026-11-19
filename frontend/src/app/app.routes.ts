@@ -72,6 +72,47 @@ export const routes: Routes = [
     loadComponent: () => import('./admin/productos/productos').then((m) => m.ProductosAdmin),
   },
 
+  /**
+   * ==================================================
+   * ETAPA 3.16 - ADMINISTRACIÓN DE PROVEEDORES
+   * ==================================================
+   *
+   * Ruta protegida mediante adminGuard.
+   * El componente se carga únicamente al navegar
+   * a la sección administrativa correspondiente.
+   */
+
+  {
+    path: 'admin/proveedores',
+
+    title: 'Toco Madera | Gestión de proveedores',
+
+    // Impedir el acceso sin una sesión ADMIN.
+    canActivate: [adminGuard],
+
+    // Carga diferida del componente.
+    loadComponent: () => import('./admin/proveedores/proveedores').then((m) => m.ProveedoresAdmin),
+  },
+
+  /**
+   * ==================================================
+   * ETAPA 3.16 - MATERIAS PRIMAS
+   * ==================================================
+   *
+   * La ruta se encuentra protegida mediante
+   * el guard administrativo existente.
+   */
+
+  {
+    path: 'admin/materiales',
+
+    title: 'Toco Madera | Materias primas',
+
+    canActivate: [adminGuard],
+
+    loadComponent: () => import('./admin/materiales/materiales').then((m) => m.MaterialesAdmin),
+  },
+
   // ====================================================
   // 6. RUTA DESCONOCIDA
   // ====================================================
