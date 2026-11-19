@@ -111,6 +111,23 @@ from app.routes.admin_proveedor_routes import admin_proveedores_bp
 from app.routes.admin_material_routes import admin_materiales_bp
 
 
+# ------------------------------------------------------------
+# ETAPA 3.17 - COMPRAS Y RECEPCIÓN DE MATERIAS PRIMAS
+# ------------------------------------------------------------
+
+# Registra compras, detalles y movimientos de recepción.
+from app.routes.admin_compra_routes import admin_compras_bp
+
+
+
+# ETAPA 3.17.6 - INVENTARIO
+from app.routes.admin_inventario_routes import admin_inventario_bp
+
+
+# ETAPA 3.17.7 - RECETAS DE FABRICACIÓN
+from app.routes.admin_receta_routes import admin_recetas_bp
+
+
 
 # ============================================================
 # 3. APPLICATION FACTORY
@@ -306,6 +323,25 @@ def create_app():
     # Los endpoints de escritura se incorporarán
     # después de validar el esquema de materiales.
     app.register_blueprint(admin_materiales_bp)
+
+
+    # ------------------------------------------------------------
+    # ETAPA 3.17 - ADMINISTRACIÓN DE COMPRAS
+    # ------------------------------------------------------------
+
+    # Endpoints protegidos con JWT y rol ADMIN.
+    app.register_blueprint(admin_compras_bp)
+
+
+    # Consulta protegida de existencias y movimientos.
+    app.register_blueprint(admin_inventario_bp)
+
+
+    # Endpoints protegidos de recetas.
+    app.register_blueprint(admin_recetas_bp)
+
+
+
 
 
 

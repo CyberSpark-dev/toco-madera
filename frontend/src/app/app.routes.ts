@@ -113,6 +113,54 @@ export const routes: Routes = [
     loadComponent: () => import('./admin/materiales/materiales').then((m) => m.MaterialesAdmin),
   },
 
+  /**
+   * ==================================================
+   * ETAPA 3.17 - GESTIÓN ADMINISTRATIVA DE COMPRAS
+   * ==================================================
+   */
+
+  {
+    path: 'admin/compras',
+
+    title: 'Toco Madera | Compras',
+
+    canActivate: [adminGuard],
+
+    loadComponent: () => import('./admin/compras/compras').then((m) => m.ComprasAdmin),
+  },
+
+  /**
+   * ==================================================
+   * ETAPA 3.17.6 - INVENTARIO ADMINISTRATIVO
+   * ==================================================
+   */
+
+  {
+    path: 'admin/inventario',
+
+    title: 'Toco Madera | Inventario',
+
+    canActivate: [adminGuard],
+
+    loadComponent: () => import('./admin/inventario/inventario').then((m) => m.InventarioAdmin),
+  },
+
+  /**
+   * ==================================================
+   * ETAPA 3.17.7 - RECETAS DE FABRICACIÓN
+   * ==================================================
+   */
+
+  {
+    path: 'admin/recetas',
+
+    title: 'Toco Madera | Recetas',
+
+    canActivate: [adminGuard],
+
+    loadComponent: () => import('./admin/recetas/recetas').then((m) => m.RecetasAdmin),
+  },
+
   // ====================================================
   // 6. RUTA DESCONOCIDA
   // ====================================================

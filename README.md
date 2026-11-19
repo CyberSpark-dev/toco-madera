@@ -4,7 +4,7 @@
 
 **Toco Madera** es una aplicación web progresiva (PWA) académica orientada a una empresa de transformación artesanal de madera en León, Guanajuato, México. Permite ofrecer productos de madera personalizables a clientes y centralizar, mediante un panel protegido, las operaciones administrativas del negocio.
 
-**Estado de desarrollo:** Etapa **3.16** cerrada tras la validación manual de diez pruebas del CRUD de materiales en entorno local. La aplicación está **en desarrollo** y no debe considerarse lista para producción.
+**Estado de desarrollo (19 de noviembre de 2026):** Etapa **3.17** cerrada. El desarrollador confirmó las pruebas manuales de compras/recepción, inventario/movimientos y las diez verificaciones de recetas. Las etapas **3.18–3.21 están pendientes**. La aplicación está **en desarrollo** y no debe considerarse lista para producción.
 
 ## 1. Objetivo y alcance
 
@@ -75,7 +75,7 @@ MySQL 8
 
 ## 5. Estructura principal del proyecto
 
-Esta estructura reúne las rutas y componentes **conocidos hasta la Etapa 3.16**. Es una referencia de los archivos trabajados; el repositorio puede contener otros módulos, modelos, archivos SQL y recursos.
+Esta estructura reúne las rutas y componentes **desarrollados hasta la Etapa 3.17**. Es una referencia de los archivos trabajados; el repositorio puede contener otros módulos, modelos, archivos SQL y recursos.
 
 ```text
 toco-madera/
@@ -98,7 +98,10 @@ toco-madera/
 │       │   ├── auth_routes.py
 │       │   ├── admin_producto_routes.py
 │       │   ├── admin_proveedor_routes.py
-│       │   └── admin_material_routes.py
+│       │   ├── admin_material_routes.py
+│       │   ├── admin_compra_routes.py
+│       │   ├── admin_inventario_routes.py
+│       │   └── admin_receta_routes.py
 │       └── utils/
 │           └── permisos.py            # @admin_required
 └── frontend/
@@ -122,12 +125,18 @@ toco-madera/
             │       ├── auth.ts
             │       ├── admin-productos.ts
             │       ├── admin-proveedores.ts
-            │       └── admin-materiales.ts
+            │       ├── admin-materiales.ts
+│       ├── admin-compras.ts
+│       ├── admin-inventario.ts
+│       └── admin-recetas.ts
             └── admin/
                 ├── dashboard/          # dashboard.ts, dashboard.html, dashboard.css
                 ├── productos/          # productos.ts, productos.html, productos.css
                 ├── proveedores/        # proveedores.ts, proveedores.html, proveedores.css
-                └── materiales/         # materiales.ts, materiales.html, materiales.css
+                ├── materiales/         # materiales.ts, materiales.html, materiales.css
+                ├── compras/            # compras.ts, compras.html, compras.css
+                ├── inventario/         # inventario.ts, inventario.html, inventario.css
+                └── recetas/            # recetas.ts, recetas.html, recetas.css
 ```
 
 **Criterio de separación:** los servicios HTTP de Angular están en `core/services`; las vistas administrativas están en `admin`; los endpoints se organizan por Blueprint en `backend/app/routes`. Los formularios de catálogo no realizan cambios directos de inventario.
@@ -225,8 +234,11 @@ El frontend se ha probado localmente en `http://localhost:4200`.
 | `/admin/productos` | Gestión de productos | ADMIN |
 | `/admin/proveedores` | Gestión de proveedores | ADMIN |
 | `/admin/materiales` | Gestión de materias primas | ADMIN |
+| `/admin/compras` | Registro, recepción y cancelación de compras | ADMIN |
+| `/admin/inventario` | Existencias y movimientos de materias primas | ADMIN |
+| `/admin/recetas` | Versiones de recetas y listas de materiales | ADMIN |
 
-El guard `adminGuard` protege la navegación hacia `/admin/dashboard`, `/admin/productos`, `/admin/proveedores` y `/admin/materiales`. La API aplica una comprobación adicional del rol en el servidor.
+El guard `adminGuard` protege la navegación hacia `/admin/dashboard`, `/admin/productos`, `/admin/proveedores` , `/admin/materiales`, `/admin/compras`, `/admin/inventario` y `/admin/recetas`. La API aplica una comprobación adicional del rol en el servidor.
 
 ## 8. Endpoints REST implementados o preparados
 
@@ -311,6 +323,57 @@ El `id_unidad` anterior es **ilustrativo**: siempre se debe seleccionar uno que 
 **Seguridad común:** los endpoints de los grupos `/admin/proveedores` y `/admin/materiales` exigen JWT y autorización `ADMIN` en Flask. El guard Angular es una barrera de navegación adicional, no la autorización definitiva.
 
 
+### 8.6. Compras y recepción — Etapa 3.17
+
+| Método | Ruta | Función |
+|---|---|---|
+| GET | `/admin/compras/` | Listar compras, sus detalles y totales |
+| GET | `/admin/compras/{id_compra}` | Consultar compra completa |
+| POST | `/admin/compras/` | Crear compra y detalles en estado `BORRADOR` |
+| PATCH | `/admin/compras/{id_compra}/recibir` | Registrar movimientos positivos y pasar a `RECIBIDA` |
+| PATCH | `/admin/compras/{id_compra}/cancelar` | Cancelar únicamente `BORRADOR` |
+
+**Estados de compra:** `BORRADOR`, `RECIBIDA` y `CANCELADA`. Una compra en borrador no altera existencias. La recepción se implementó como una transacción de MySQL con bloqueo `SELECT ... FOR UPDATE` en la cabecera para reducir el riesgo de recepciones simultáneas o duplicadas. La recepción crea movimientos `COMPRA` positivos asociados a cada detalle.
+
+**Ejemplo de registro (identificadores ilustrativos: deben existir en MySQL):**
+
+```json
+{
+  "id_proveedor": 1,
+  "referencia_documento": "OC-PRUEBA-001",
+  "observaciones": "Compra de prueba",
+  "detalles": [
+    { "id_material": 1, "cantidad": "10.0000", "costo_unitario": "25.0000" }
+  ]
+}
+```
+
+**Limitación identificada:** el endpoint entregado todavía no enlaza el campo nullable `compras.id_usuario_registro` con la identidad del JWT. Incorporar auditoría por usuario en el endurecimiento final; no interpretarlo como trazabilidad de autoría ya completada.
+
+### 8.7. Inventario y movimientos — Etapa 3.17
+
+| Método | Ruta | Función |
+|---|---|---|
+| GET | `/admin/inventario/` | Existencias por material, alertas y materiales sin existencias |
+| GET | `/admin/inventario/movimientos` | Hasta 100 movimientos recientes por defecto (máximo 500), filtro opcional `id_material` |
+
+La existencia de cada material se obtiene sumando `movimientos_material.cantidad_firmada`. No existe un contador separado que sea actualizado por el CRUD de materiales. Las entradas son positivas y los consumos deben ser negativos. Los movimientos incluyen tipo `COMPRA`, `CONSUMO`, `AJUSTE` o `DEVOLUCION` según el esquema MySQL. El módulo administrativo de la Etapa 3.17 **consulta movimientos; no habilita ajustes manuales**.
+
+> **Criterio de alertas:** `existencia < stock_minimo`. Los materiales con umbral cero y saldo cero no necesariamente reciben la etiqueta «bajo mínimo», aunque sí se contabilizan en «sin existencia».
+
+### 8.8. Recetas de fabricación — Etapa 3.17
+
+| Método | Ruta | Función |
+|---|---|---|
+| GET | `/admin/recetas/` | Consultar versiones y sus ingredientes |
+| GET | `/admin/recetas/catalogos` | Consultar productos y materiales para el formulario |
+| POST | `/admin/recetas/` | Registrar una nueva versión y hacerla vigente |
+| PATCH | `/admin/recetas/{id_receta}/activar` | Reactivar una versión previa |
+
+Las recetas usan `recetas` y `receta_materiales`: producto, versión, vigencia, tiempos de fabricación/grabado, costos de mano de obra e indirectos, observaciones y cantidad por material para producir **una unidad**. Crear o activar una versión no genera movimientos de inventario. El versionado conserva el historial; los cambios de vigencia de un mismo producto se realizan en una transacción.
+
+**Advertencia:** el costo de proceso mostrado en Angular es mano de obra más indirectos, no costo integral de producción; para este último faltan valoración y consumo de materiales. La Etapa 3.19 deberá conservar la versión específica de receta utilizada por cada orden de fabricación.
+
 **Ejemplo de cuerpo JSON para registro o edición:**
 
 ```json
@@ -349,14 +412,19 @@ Los identificadores de categoría y los SKU del ejemplo deben adaptarse a los da
 10. Los materiales utilizan un SKU único de hasta 40 caracteres y un nombre obligatorio de hasta 150 caracteres; su descripción es opcional y tiene un máximo de 250 caracteres.
 11. `materiales.id_unidad` es una clave foránea que referencia `unidades_medida.id_unidad`; únicamente se aceptan unidades existentes.
 12. `materiales.stock_minimo` es `DECIMAL(14,4)`, no negativo, y constituye un **umbral de reabastecimiento**, no la existencia actual en almacén.
-13. Las operaciones de alta/edición de materiales no insertan entradas ni salidas en `movimientos_material`. Estas transacciones corresponden a un módulo posterior.
+13. El CRUD de materiales no altera existencias; las compras recibidas registran entradas positivas en `movimientos_material`.
 14. Los materiales y proveedores pueden desactivarse sin eliminar físicamente registros asociados a compras, cotizaciones o producción.
 15. Para pedidos personalizados se contempla un anticipo del **50 %** y liquidación contra entrega, o pago completo al realizar el pedido. La pasarela/pago es **simulado** en el alcance académico previsto.
 16. Los pedidos grandes requieren un plazo de fabricación/entrega, mientras que los productos ya disponibles pueden entregarse antes, según existencias y operación.
 
-Las reglas de pedidos, anticipos e inventario están documentadas como **alcance funcional previsto**; no deben confundirse con módulos ya implementados.
+17. Las compras inician como `BORRADOR`; solo la recepción genera movimientos de entrada y transición a `RECIBIDA`. Una compra recibida no se recibe ni cancela por segunda vez desde el módulo actual.
+18. El inventario se calcula como `SUM(cantidad_firmada)` por material y se contrasta con `stock_minimo` sin sobrescribir movimientos previos.
+19. Las recetas tienen versiones: solo una versión vigente por producto; nuevas versiones preservan el historial y no descuentan materiales.
+20. Los flujos de pedidos, pago simulado y consumo en producción permanecen **pendientes** y deben usar transacciones atómicas, controles de stock y estados válidos.
 
-## 10. Estado de los módulos al cierre de la Etapa 3.16
+Las reglas de pedidos y anticipos se documentan como **alcance previsto**, no como módulos terminados. La lectura de inventario y recetas sí fue desarrollada en la Etapa 3.17.
+
+## 10. Estado de los módulos al cierre de la Etapa 3.17
 
 | Módulo o capacidad | Estado al cierre |
 |---|---|
@@ -374,9 +442,11 @@ Las reglas de pedidos, anticipos e inventario están documentadas como **alcance
 | CRUD de materias primas y selector de unidades | **Etapa 3.16: diez pruebas funcionales confirmadas** |
 | Carrito, personalización y pago simulado | Pendiente de integración completa |
 | Pedidos e historial del cliente | Pendiente |
-| Compras y recepción de materiales | Pendiente |
-| Existencias, movimientos, alertas y reservas | Pendiente |
-| Recetas/listas de materiales y órdenes de producción | Pendiente |
+| Compras, registro de detalles y recepción | **Etapa 3.17: validada manualmente** |
+| Existencias, movimientos y alertas de materiales | **Etapa 3.17: validada manualmente** |
+| Reservas de producto e inventario terminado | Pendiente de integrar con pedidos/producción |
+| Recetas, ingredientes y versionado | **Etapa 3.17: diez pruebas confirmadas** |
+| Órdenes de producción y consumos de materiales | Pendiente, Etapa 3.19 |
 | Estadísticas reales desde MySQL | Pendiente |
 | Pruebas automatizadas, auditoría y despliegue | Pendiente |
 
@@ -413,6 +483,47 @@ Las reglas de pedidos, anticipos e inventario están documentadas como **alcance
 | `activo` | `TINYINT(1)` | No nulo, predeterminado `1` |
 
 Antes del CRUD había diez materiales base observados en MySQL, entre ellos pino, triplay, pegamento, barniz, lijas, ganchos, tornillos, protector de marco, empaque y base de rodillo. Los registros de prueba posteriores pueden aumentar el total; por eso no debe utilizarse el número diez como conteo fijo del estado actual.
+
+### 10.4. Entregables de la Etapa 3.17 — compras, inventario y recetas
+
+**Compras y recepción**
+
+- Blueprint `admin_compra_routes.py` con consulta, registro, recepción y cancelación de borradores.
+- Servicio Angular `admin-compras.ts` y pantalla `/admin/compras`.
+- Registro de cabecera y uno o varios detalles en una sola transacción.
+- Totales calculados a partir de cantidades y costos unitarios.
+- Recepción con movimientos positivos de materia prima y transición a `RECIBIDA`.
+- Confirmación manual del usuario: **la compra se registra y puede recibirse**.
+
+**Inventario y movimientos**
+
+- Blueprint `admin_inventario_routes.py` con existencias agregadas y consulta de movimientos filtrados.
+- Servicio `admin-inventario.ts` y pantalla `/admin/inventario`.
+- Indicadores de stock bajo, materiales sin existencias, búsqueda y filtrado.
+- Contraste de resultados con consultas de MySQL. El desarrollador confirmó la finalización de las verificaciones del módulo.
+
+**Recetas y versionado**
+
+- Blueprint `admin_receta_routes.py` con consulta, catálogos, creación de versión y activación.
+- Servicio `admin-recetas.ts` y pantalla `/admin/recetas`.
+- Tabla de recetas/ingredientes, formulario con múltiples materiales, tiempos y costos.
+- Versiones históricas preservadas y una vigente por producto (regla aplicada por el backend).
+- El desarrollador confirmó las **diez pruebas funcionales** del módulo de recetas.
+
+### 10.5. Tablas verificadas para la Etapa 3.17
+
+| Tabla | Uso dentro de la etapa |
+|---|---|
+| `compras` | Cabecera, proveedor, estado, referencia y observaciones |
+| `compra_detalles` | Cantidades y costos unitarios por material |
+| `movimientos_material` | Entradas de compra y libro de movimientos firmado |
+| `materiales` | Catálogo y umbrales de stock |
+| `proveedores` | Catálogo de proveedores para compras |
+| `unidades_medida` | Unidades del catálogo de materiales |
+| `recetas` | Versiones vigentes e históricas y costos/tiempos de proceso |
+| `receta_materiales` | Materias primas y cantidades por unidad fabricada |
+
+Las tablas `consumos_produccion`, `ordenes_produccion`, `lotes_producto` y `reservas_producto` también fueron identificadas en el esquema de la base de datos; **sus flujos funcionales aún no están desarrollados**.
 
 ## 11. Pruebas manuales realizadas / a mantener
 
@@ -461,6 +572,21 @@ Las **diez pruebas funcionales** fueron confirmadas por el equipo:
 Estas comprobaciones son **manuales reportadas por el equipo**, no una suite automatizada ni una auditoría de seguridad independiente.
 
 
+### Compras, recepción e inventario — Etapa 3.17
+
+- Comprobar el rechazo de endpoints sin JWT.
+- Registrar una compra `BORRADOR` con al menos un material y comprobar que el inventario no aumenta.
+- Recibir la compra y comprobar el estado `RECIBIDA` y los movimientos `COMPRA` positivos.
+- Rechazar una recepción duplicada y una cancelación posterior a la recepción.
+- Abrir `/admin/inventario`, consultar existencias y comparar contra la suma en MySQL.
+- Revisar alertas, filtros, historial y ausencia de entradas duplicadas por `id_detalle_compra`.
+
+**Evidencia declarada:** el desarrollador confirmó que la compra se registra y recibe, y después que completó las verificaciones del módulo de inventario. No se adjunta en este README una ejecución automatizada ni resultados SQL exportados posteriores a esas pruebas.
+
+### Recetas — Etapa 3.17
+
+Las diez verificaciones confirmadas por el desarrollador incluyen detección de endpoints, compilación Angular, carga de la pantalla, catálogos, listado de recetas e ingredientes, copia de datos a una nueva versión, cambios en cantidades y observaciones, guardado, reactivación de una versión histórica y consulta de MySQL para detectar productos con más de una receta vigente.
+
 Comandos útiles:
 
 ```powershell
@@ -500,22 +626,113 @@ No utilizar `git init`, `git remote rename` ni `git push --force` para la public
 # Desde la raíz del repositorio
 git status
 git add README.md backend frontend
-git commit -m "feat: completar etapa 3.16 proveedores y materiales"
+git commit -m "feat: cerrar etapa 3.17 compras inventario y recetas"
 git push origin main
 ```
 
 Revisar siempre `git status` y `git diff --cached` antes del commit para asegurar que no se incluyan secretos, archivos temporales ni el entorno virtual.
 
-## 14. Próximas etapas
+## 14. Plan de ejecución pendiente — Etapas 3.18 a 3.21
 
-1. Compras y recepción de materiales (siguiente etapa sugerida: **3.17**).
-2. Inventarios, movimientos, existencias y alertas.
-3. Recetas/listas de materiales y órdenes de producción.
-4. Pedidos, personalización, carrito y pagos simulados.
-5. Indicadores reales y gráficas desde MySQL.
-6. Pruebas integrales, accesibilidad, seguridad, PWA y preparación de entrega.
+Se prioriza una entrega académica integral en el tiempo restante, evitando módulos aislados que no estén conectados a los pedidos y a la producción.
 
-El orden exacto puede ajustarse según dependencias y prioridades del equipo, manteniendo la arquitectura Angular + Flask + MySQL.
+### 3.18 — Carrito, pedidos de clientes y pagos simulados
+
+**Orden de ejecución:**
+
+1. **3.18.1: diagnóstico único de MySQL.** Revisar columnas, restricciones, claves foráneas, estados e índices de tablas de carrito (si existe), pedidos, detalles, pagos, usuarios/clientes, personalización, productos, reservas y entregas. No presuponer nombres de columnas que no estén confirmados.
+2. **3.18.2: contrato de API y reglas de estados.** Definir cuerpos/respuestas JSON, validación server-side, precios del catálogo, límites de grabado y cantidades; criterios para pedido a fabricar o disponible.
+3. **3.18.3: backend transaccional.** Registrar pedido con sus detalles, total y modalidad de pago simulada; evitar manipulación del precio desde Angular; vincular pedido al usuario JWT; verificar disponibilidad con el proceso de reservas que permita el esquema.
+4. **3.18.4: carrito Angular.** Seleccionar productos, cantidades, textos de grabado, editar y quitar artículos; mostrar subtotal y total.
+5. **3.18.5: checkout y simulación de pago.** Pago total o anticipo del **50 %**; registrar importes, estado y saldo pendiente en MySQL. Ninguna integración bancaria real ni almacenamiento de datos de tarjeta.
+6. **3.18.6: historial básico y pruebas.** El cliente consulta sus pedidos; el administrador puede consultarlos y revisar estados; validar cálculos, permisos, errores, persistencia y casos negativos.
+7. **3.18.7: actualización completa del README y commit.** Cerrar la etapa solo después de pruebas manuales de extremo a extremo.
+
+**Criterios de aceptación 3.18:** el cliente autenticado puede preparar un carrito con varios artículos, personalizarlos cuando corresponda, confirmar pedido, seleccionar pago simulado de 50 % o 100 %, recibir número de pedido y consultarlo después. El servidor calcula importes, guarda la operación íntegra y rechaza accesos ajenos al pedido.
+
+**Reglas mínimas:** el grabado debe respetar `permite_grabado` y `max_caracteres_grabado`; los productos deben estar activos; la misma petición no debe generar cobros duplicados; los pagos son simulaciones contables, no cobros reales; los cambios de estado deben seguir la secuencia permitida por el esquema real.
+
+### 3.19 — Producción, consumos, lotes, reservas y entregas
+
+- Crear órdenes de producción vinculadas a pedidos y versiones concretas de recetas.
+- Calcular materiales requeridos multiplicando la receta por la cantidad de productos.
+- Validar existencias con transacciones para impedir consumos simultáneos excesivos.
+- Registrar consumos negativos de materias primas y lotes/productos terminados según el esquema.
+- Gestionar reservas de producto, entrega y saldo final de pedidos con anticipo.
+
+### 3.20 — Integración de cliente y administrador
+
+- Unificar seguimiento, historial de pedidos, posibles reseñas previstas en el alcance y panel administrativo.
+- Reemplazar los datos de muestra de Chart.js por indicadores reales de compras, pedidos, producción y ventas desde Flask/MySQL.
+- Corregir inconsistencias visuales, navegación y mensajes de error.
+
+### 3.21 — PWA, pruebas y entrega
+
+- Revisar manifest, service worker, iconos, instalabilidad y alcance offline compatible con seguridad.
+- Probar registro/login, carrito, pago simulado, compra, inventario, receta, producción y entrega de extremo a extremo.
+- Comprobar build de Angular, importación Flask, CORS, JWT, accesos administrativos, secretos y estado Git.
+- Preparar el README general actualizado y el paquete de entrega académica.
+
+### 14.1. Diagnóstico SQL único al comenzar 3.18
+
+Ejecutar **solo en MySQL Workbench**. Las consultas son de lectura y están diseñadas para descubrir las tablas reales antes de implementar pedidos y pagos.
+
+```sql
+USE toco_madera;
+
+-- A. Identificar tablas comerciales relacionadas.
+SELECT TABLE_NAME
+FROM information_schema.TABLES
+WHERE TABLE_SCHEMA = 'toco_madera'
+  AND (
+    TABLE_NAME LIKE '%pedido%' OR
+    TABLE_NAME LIKE '%pago%' OR
+    TABLE_NAME LIKE '%carrito%' OR
+    TABLE_NAME LIKE '%reserva%' OR
+    TABLE_NAME LIKE '%entrega%' OR
+    TABLE_NAME LIKE '%personaliza%' OR
+    TABLE_NAME LIKE '%cliente%' OR
+    TABLE_NAME IN ('productos', 'usuarios', 'roles', 'lotes_producto')
+  )
+ORDER BY TABLE_NAME;
+
+-- B. Columnas y tipos de las tablas relevantes.
+SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE,
+       IS_NULLABLE, COLUMN_KEY, COLUMN_DEFAULT, EXTRA
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = 'toco_madera'
+  AND (
+    TABLE_NAME LIKE '%pedido%' OR
+    TABLE_NAME LIKE '%pago%' OR
+    TABLE_NAME LIKE '%carrito%' OR
+    TABLE_NAME LIKE '%reserva%' OR
+    TABLE_NAME LIKE '%entrega%' OR
+    TABLE_NAME LIKE '%personaliza%' OR
+    TABLE_NAME LIKE '%cliente%' OR
+    TABLE_NAME IN ('productos', 'usuarios', 'roles', 'lotes_producto')
+  )
+ORDER BY TABLE_NAME, ORDINAL_POSITION;
+
+-- C. Relaciones entre las tablas localizadas.
+SELECT TABLE_NAME, COLUMN_NAME,
+       REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+FROM information_schema.KEY_COLUMN_USAGE
+WHERE TABLE_SCHEMA = 'toco_madera'
+  AND REFERENCED_TABLE_NAME IS NOT NULL
+  AND (
+    TABLE_NAME LIKE '%pedido%' OR
+    TABLE_NAME LIKE '%pago%' OR
+    TABLE_NAME LIKE '%carrito%' OR
+    TABLE_NAME LIKE '%reserva%' OR
+    TABLE_NAME LIKE '%entrega%' OR
+    TABLE_NAME LIKE '%personaliza%' OR
+    TABLE_NAME LIKE '%cliente%' OR
+    TABLE_NAME IN ('productos', 'usuarios', 'lotes_producto')
+  )
+ORDER BY TABLE_NAME, COLUMN_NAME;
+```
+
+Los tres resultados se pueden exportar como CSV. Se evita solicitar de nuevo la información estructural de compras, inventario y recetas ya verificada en la Etapa 3.17.
 
 ## 15. Historial de hitos
 
@@ -525,6 +742,8 @@ El orden exacto puede ajustarse según dependencias y prioridades del equipo, ma
 | 3.14 | Integración de login/registro Angular, JWT, guard, dashboard y cierre de sesión |
 | **3.15** | **CRUD administrativo de productos: consulta, categorías, alta, edición, búsqueda, filtros y cambio de estado; validación funcional completada** |
 | **3.16** | **Proveedores y materias primas: CRUD protegido, formularios Angular, unidad de medida, validaciones de stock mínimo y diez pruebas confirmadas del módulo materiales** |
+| **3.17** | **Compras y recepción, existencias y movimientos, recetas versionadas: desarrollo y pruebas manuales confirmadas** |
+| 3.18–3.21 | Pendientes: pedidos/pagos, producción/entrega, integración y entrega PWA |
 
 ---
 
@@ -532,4 +751,4 @@ El orden exacto puede ajustarse según dependencias y prioridades del equipo, ma
 
 **Proyecto académico — Toco Madera, León, Guanajuato, México.**
 
-**Actualización documental:** 19 de noviembre de 2026 — cierre de la Etapa 3.16.
+**Actualización documental:** 19 de noviembre de 2026 — cierre de la **Etapa 3.17** y preparación de la **3.18**.
