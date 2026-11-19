@@ -1,11 +1,36 @@
-<div class="min-h-screen bg-crema">
-  <!-- Barra superior -->
-  <header class="bg-nogal px-6 py-5 text-white">
-    <div class="mx-auto flex max-w-7xl items-center justify-between">
-      <h1 class="font-brand text-xl font-bold">Toco Madera | Administración</h1>
+<!-- ====================================================
+     TOCO MADERA - DASHBOARD ADMINISTRATIVO
+     Archivo: frontend/src/app/admin/dashboard/dashboard.html
+==================================================== -->
 
-      <!-- Estado de comunicación Angular + Flask -->
-      <div role="status" class="my-5 rounded-lg border border-orange-200 bg-white p-4 shadow-sm">
+<div class="min-h-screen bg-crema">
+  <!-- ==================================================
+       1. ENCABEZADO ADMINISTRATIVO
+  ================================================== -->
+
+  <header class="bg-nogal px-6 py-5 text-white">
+    <div
+      class="mx-auto flex max-w-7xl flex-col gap-5 lg:flex-row lg:items-center lg:justify-between"
+    >
+      <!-- NOMBRE COMERCIAL -->
+      <div>
+        <h1 class="font-brand text-xl font-bold">Toco Madera | Administración</h1>
+
+        <!-- Nombre del administrador autenticado -->
+        <p class="mt-2 text-sm text-[#F9E9D5]">
+          Bienvenido,
+
+          <span class="font-semibold">
+            {{ auth.usuario()?.nombre || 'Administrador' }}
+          </span>
+        </p>
+      </div>
+
+      <!-- ==========================================
+           ESTADO DE CONEXIÓN CON FLASK
+      ========================================== -->
+
+      <div role="status" class="rounded-lg border border-orange-200 bg-white p-4 shadow-sm">
         <p class="text-sm font-semibold text-nogal">Estado de conexión con Flask:</p>
 
         <p class="mt-2 text-sm text-terracota">
@@ -13,60 +38,145 @@
         </p>
       </div>
 
-      <a routerLink="/" class="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-nogal">
-        Volver a tienda
-      </a>
+      <!-- ==========================================
+           NAVEGACIÓN Y CIERRE DE SESIÓN
+      ========================================== -->
+
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- VOLVER A LA TIENDA -->
+        <a
+          routerLink="/"
+          class="inline-flex items-center justify-center rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-nogal shadow-sm transition-colors hover:bg-crema focus:outline-none focus:ring-4 focus:ring-[#E8C8AB]"
+        >
+          Volver a tienda
+        </a>
+
+        <!-- CERRAR SESIÓN -->
+        <button
+          type="button"
+          (click)="cerrarSesion()"
+          class="inline-flex items-center justify-center rounded-lg bg-terracota px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#8C4825] focus:outline-none focus:ring-4 focus:ring-[#E8C8AB]"
+        >
+          Cerrar sesión
+        </button>
+      </div>
     </div>
   </header>
 
+  <!-- ==================================================
+       2. CONTENIDO PRINCIPAL
+  ================================================== -->
+
   <main class="mx-auto max-w-7xl px-6 py-10">
+    <!-- TÍTULO DE LA SECCIÓN -->
     <div class="mb-8">
       <h2 class="text-3xl font-bold text-nogal">Dashboard</h2>
 
       <p class="mt-2 text-gray-600">Indicadores comerciales y operativos.</p>
     </div>
 
-    <!-- KPIs -->
-    <section class="mb-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-      <article class="rounded-xl bg-white p-6 shadow-sm">
+    <!-- ==================================================
+         3. INDICADORES KPI
+    ================================================== -->
+
+    <section
+      class="mb-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
+      aria-label="Indicadores del negocio"
+    >
+      <!-- KPI 1: VENTAS CONFIRMADAS -->
+      <article class="rounded-xl bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
         <p class="text-sm text-gray-500">Ventas confirmadas</p>
+
         <h3 class="mt-3 text-3xl font-bold text-nogal">
-          {{ ventasConfirmadas | currency: 'MXN' }}
+          {{ ventasConfirmadas | currency: 'MXN' : 'symbol' : '1.2-2' }}
         </h3>
       </article>
 
-      <article class="rounded-xl bg-white p-6 shadow-sm">
+      <!-- KPI 2: PEDIDOS PENDIENTES -->
+      <article class="rounded-xl bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
         <p class="text-sm text-gray-500">Pedidos pendientes</p>
+
         <h3 class="mt-3 text-3xl font-bold text-nogal">
           {{ pedidosPendientes }}
         </h3>
       </article>
 
-      <article class="rounded-xl bg-white p-6 shadow-sm">
+      <!-- KPI 3: CLIENTES REGISTRADOS -->
+      <article class="rounded-xl bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
         <p class="text-sm text-gray-500">Clientes registrados</p>
+
         <h3 class="mt-3 text-3xl font-bold text-nogal">
           {{ clientesRegistrados }}
         </h3>
       </article>
 
-      <article class="rounded-xl bg-white p-6 shadow-sm">
+      <!-- KPI 4: UNIDADES VENDIDAS -->
+      <article class="rounded-xl bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
         <p class="text-sm text-gray-500">Unidades vendidas</p>
+
         <h3 class="mt-3 text-3xl font-bold text-nogal">
           {{ productosVendidos }}
         </h3>
       </article>
     </section>
 
-    <!-- Gráfica principal -->
-    <section class="rounded-xl bg-white p-6 shadow-sm">
-      <h3 class="mb-2 text-xl font-bold text-nogal">Ventas durante la semana</h3>
+    <!-- ==================================================
+         4. GRÁFICA DE VENTAS
+    ================================================== -->
 
+    <section class="rounded-xl bg-white p-6 shadow-sm" aria-labelledby="titulo-ventas">
+      <!-- TÍTULO -->
+      <h3 id="titulo-ventas" class="mb-2 text-xl font-bold text-nogal">Ventas durante la semana</h3>
+
+      <!-- MENSAJE TEMPORAL -->
       <p class="mb-5 text-sm text-gray-500">
-        Sin datos registrados. La conexión a MySQL se realizará en una etapa posterior.
+        Sin datos de ventas registrados. Las estadísticas se conectarán posteriormente con los datos
+        reales de MySQL mediante Flask.
       </p>
 
+      <!-- CONTENEDOR DE CHART.JS -->
       <div class="relative h-72 w-full">
-        <canvas #ventasChart aria-label="Gráfica de ventas"> </canvas>
+        <!--
+          IMPORTANTE:
+
+          #ventasChart permite que dashboard.ts
+          encuentre este canvas mediante ViewChild.
+
+          No eliminar ni cambiar su nombre.
+        -->
+
+        <canvas
+          #ventasChart
+          role="img"
+          aria-label="Gráfica de ventas confirmadas durante la semana"
+        >
+        </canvas>
+      </div>
+    </section>
+
+    <!-- ==================================================
+         5. INFORMACIÓN DEL MÓDULO
+    ================================================== -->
+
+    <!-- ==================================================
+     TOCO MADERA - ACCESOS ADMINISTRATIVOS
+================================================== -->
+
+    <section class="mt-8">
+      <div class="rounded-xl border border-[#E8D6BF] bg-white p-6 shadow-sm">
+        <h3 class="text-lg font-semibold text-nogal">Módulos administrativos</h3>
+
+        <p class="mt-2 text-sm text-gray-600">Selecciona el módulo que deseas administrar.</p>
+
+        <div class="mt-5 flex flex-wrap gap-3">
+          <!-- ACCESO AL CRUD DE PRODUCTOS -->
+          <a
+            routerLink="/admin/productos"
+            class="inline-flex items-center rounded-lg bg-terracota px-5 py-3 text-sm font-semibold text-white hover:bg-nogal"
+          >
+            Gestionar productos
+          </a>
+        </div>
       </div>
     </section>
   </main>

@@ -40,6 +40,13 @@ from app.routes.producto_routes import productos_bp
 from app.routes.auth_routes import auth_bp
 
 
+# ==================================================
+# TOCO MADERA - ADMINISTRACIÓN DE PRODUCTOS
+# ==================================================
+
+from app.routes.admin_producto_routes import admin_productos_bp
+
+
 # ==========================================
 # 3. APPLICATION FACTORY
 # ==========================================
@@ -138,6 +145,13 @@ def create_app():
 
     # Endpoints de autenticación.
     app.register_blueprint(auth_bp)
+
+
+    # Registrar rutas administrativas de productos.
+    app.register_blueprint(admin_productos_bp)
+
+
+    
 
 
     # ======================================
