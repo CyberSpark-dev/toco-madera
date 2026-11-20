@@ -134,7 +134,11 @@ from app.routes.admin_receta_routes import admin_recetas_bp
 
 from app.routes.cliente_pedido_routes import cliente_pedidos_bp
 
+    # =====================================================
+    # ETAPA 3.19.2 - ÓRDENES DE PRODUCCIÓN
+    # =====================================================
 
+from app.routes.admin_produccion_routes import admin_produccion_bp
 
 
 # ============================================================
@@ -351,6 +355,27 @@ def create_app():
 
     # Rutas del cliente para pedidos y checkout.
     app.register_blueprint(cliente_pedidos_bp)
+
+
+    # =====================================================
+    # ETAPA 3.19.2 - ÓRDENES DE PRODUCCIÓN
+    # =====================================================
+
+    
+
+    app.register_blueprint(admin_produccion_bp)
+
+
+# =====================================================
+# COSTOS BASE DE MATERIAS PRIMAS
+# ETAPA 3.19.3
+# =====================================================
+
+    from app.routes.admin_costos_materiales_routes import (
+        admin_costos_materiales_bp
+    )
+
+    app.register_blueprint(admin_costos_materiales_bp)
 
 
 

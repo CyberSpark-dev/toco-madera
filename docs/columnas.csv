@@ -1,0 +1,96 @@
+TABLE_NAME,ORDINAL_POSITION,COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE,COLUMN_KEY,COLUMN_DEFAULT,EXTRA
+consumos_produccion,1,id_consumo,"bigint unsigned",NO,PRI,NULL,auto_increment
+consumos_produccion,2,id_orden,"bigint unsigned",NO,MUL,NULL,
+consumos_produccion,3,id_material,"bigint unsigned",NO,MUL,NULL,
+consumos_produccion,4,cantidad,"decimal(14,4)",NO,,NULL,
+consumos_produccion,5,costo_unitario_aplicado,"decimal(14,4)",NO,,NULL,
+entregas,1,id_entrega,"bigint unsigned",NO,PRI,NULL,auto_increment
+entregas,2,id_pedido,"bigint unsigned",NO,UNI,NULL,
+entregas,3,programada,datetime,YES,,NULL,
+entregas,4,entregada,datetime,YES,,NULL,
+entregas,5,estado,"enum('PENDIENTE','PROGRAMADA','ENTREGADA')",NO,,PENDIENTE,
+entregas,6,receptor,varchar(120),YES,,NULL,
+entregas,7,observaciones,varchar(300),YES,,NULL,
+lotes_producto,1,id_lote,"bigint unsigned",NO,PRI,NULL,auto_increment
+lotes_producto,2,id_producto,"bigint unsigned",NO,MUL,NULL,
+lotes_producto,3,id_orden,"bigint unsigned",YES,UNI,NULL,
+lotes_producto,4,id_detalle_pedido,"bigint unsigned",YES,MUL,NULL,
+lotes_producto,5,texto_grabado,varchar(120),YES,,NULL,
+lotes_producto,6,fecha_alta,datetime,NO,,CURRENT_TIMESTAMP,DEFAULT_GENERATED
+materiales,1,id_material,"bigint unsigned",NO,PRI,NULL,auto_increment
+materiales,2,sku,varchar(40),NO,UNI,NULL,
+materiales,3,nombre,varchar(150),NO,,NULL,
+materiales,4,descripcion,varchar(250),YES,,NULL,
+materiales,5,id_unidad,"smallint unsigned",NO,MUL,NULL,
+materiales,6,stock_minimo,"decimal(14,4)",NO,,0.0000,
+materiales,7,activo,tinyint(1),NO,,1,
+movimientos_material,1,id_movimiento,"bigint unsigned",NO,PRI,NULL,auto_increment
+movimientos_material,2,id_material,"bigint unsigned",NO,MUL,NULL,
+movimientos_material,3,fecha,datetime,NO,,CURRENT_TIMESTAMP,DEFAULT_GENERATED
+movimientos_material,4,tipo,"enum('COMPRA','CONSUMO','AJUSTE','DEVOLUCION')",NO,,NULL,
+movimientos_material,5,cantidad_firmada,"decimal(14,4)",NO,,NULL,
+movimientos_material,6,costo_unitario_aplicado,"decimal(14,4)",YES,,NULL,
+movimientos_material,7,id_detalle_compra,"bigint unsigned",YES,UNI,NULL,
+movimientos_material,8,id_orden_produccion,"bigint unsigned",YES,MUL,NULL,
+movimientos_material,9,observaciones,varchar(250),YES,,NULL,
+movimientos_producto,1,id_movimiento,"bigint unsigned",NO,PRI,NULL,auto_increment
+movimientos_producto,2,id_lote,"bigint unsigned",NO,MUL,NULL,
+movimientos_producto,3,fecha,datetime,NO,,CURRENT_TIMESTAMP,DEFAULT_GENERATED
+movimientos_producto,4,tipo,"enum('PRODUCCION','ENTREGA','AJUSTE','DEVOLUCION')",NO,,NULL,
+movimientos_producto,5,cantidad_firmada,int,NO,,NULL,
+movimientos_producto,6,id_detalle_pedido,"bigint unsigned",YES,MUL,NULL,
+movimientos_producto,7,observaciones,varchar(250),YES,,NULL,
+ordenes_produccion,1,id_orden,"bigint unsigned",NO,PRI,NULL,auto_increment
+ordenes_produccion,2,id_receta,"bigint unsigned",NO,MUL,NULL,
+ordenes_produccion,3,id_detalle_pedido,"bigint unsigned",YES,MUL,NULL,
+ordenes_produccion,4,cantidad,"int unsigned",NO,,NULL,
+ordenes_produccion,5,estado,"enum('PLANIFICADA','EN_PROCESO','FINALIZADA','CANCELADA')",NO,MUL,PLANIFICADA,
+ordenes_produccion,6,texto_grabado,varchar(120),YES,,NULL,
+ordenes_produccion,7,fecha_inicio,datetime,YES,,NULL,
+ordenes_produccion,8,fecha_fin,datetime,YES,,NULL,
+ordenes_produccion,9,observaciones,varchar(300),YES,,NULL,
+pagos,1,id_pago,"bigint unsigned",NO,PRI,NULL,auto_increment
+pagos,2,id_pedido,"bigint unsigned",NO,MUL,NULL,
+pagos,3,fecha,datetime,NO,,CURRENT_TIMESTAMP,DEFAULT_GENERATED
+pagos,4,monto,"decimal(12,2)",NO,,NULL,
+pagos,5,metodo,"enum('TARJETA_SIMULADA','TRANSFERENCIA_SIMULADA','EFECTIVO_SIMULADO')",NO,,NULL,
+pagos,6,estado,"enum('APROBADO_SIMULADO','RECHAZADO_SIMULADO','ANULADO')",NO,,NULL,
+pagos,7,referencia,varchar(80),NO,UNI,NULL,
+pedido_detalles,1,id_detalle_pedido,"bigint unsigned",NO,PRI,NULL,auto_increment
+pedido_detalles,2,id_pedido,"bigint unsigned",NO,MUL,NULL,
+pedido_detalles,3,id_producto,"bigint unsigned",NO,MUL,NULL,
+pedido_detalles,4,cantidad,"int unsigned",NO,,NULL,
+pedido_detalles,5,precio_unitario_acordado,"decimal(12,2)",NO,,NULL,
+pedido_detalles,6,texto_grabado,varchar(120),YES,,NULL,
+pedido_detalles,7,tipo_surtido,"enum('EXISTENCIA','FABRICACION')",NO,,NULL,
+pedido_detalles,8,notas,varchar(200),YES,,NULL,
+pedidos,1,id_pedido,"bigint unsigned",NO,PRI,NULL,auto_increment
+pedidos,2,folio,varchar(35),NO,UNI,NULL,
+pedidos,3,id_cliente,"bigint unsigned",NO,MUL,NULL,
+pedidos,4,id_direccion,"bigint unsigned",YES,MUL,NULL,
+pedidos,5,fecha,datetime,NO,,CURRENT_TIMESTAMP,DEFAULT_GENERATED
+pedidos,6,estado,"enum('PENDIENTE_ANTICIPO','CONFIRMADO','EN_PRODUCCION','LISTO','ENTREGADO','CANCELADO')",NO,MUL,PENDIENTE_ANTICIPO,
+pedidos,7,modalidad_pago,"enum('ANTICIPO_50','TOTAL')",NO,,NULL,
+pedidos,8,fecha_entrega_prometida,datetime,YES,,NULL,
+pedidos,9,tipo_entrega,"enum('RECOLECCION','ENTREGA_LOCAL')",NO,,RECOLECCION,
+pedidos,10,monto_envio,"decimal(12,2)",NO,,0.00,
+pedidos,11,descuento,"decimal(12,2)",NO,,0.00,
+pedidos,12,notas,varchar(500),YES,,NULL,
+receta_materiales,1,id_receta,"bigint unsigned",NO,PRI,NULL,
+receta_materiales,2,id_material,"bigint unsigned",NO,PRI,NULL,
+receta_materiales,3,cantidad,"decimal(14,4)",NO,,NULL,
+recetas,1,id_receta,"bigint unsigned",NO,PRI,NULL,auto_increment
+recetas,2,id_producto,"bigint unsigned",NO,MUL,NULL,
+recetas,3,version,"smallint unsigned",NO,,NULL,
+recetas,4,vigente,tinyint(1),NO,,0,
+recetas,5,minutos_fabricacion,"smallint unsigned",NO,,0,
+recetas,6,minutos_grabado,"smallint unsigned",NO,,0,
+recetas,7,costo_hora_mano_obra,"decimal(12,2)",NO,,0.00,
+recetas,8,costo_indirecto_unitario,"decimal(12,2)",NO,,0.00,
+recetas,9,observaciones,varchar(300),YES,,NULL,
+reservas_producto,1,id_reserva,"bigint unsigned",NO,PRI,NULL,auto_increment
+reservas_producto,2,id_lote,"bigint unsigned",NO,MUL,NULL,
+reservas_producto,3,id_detalle_pedido,"bigint unsigned",NO,MUL,NULL,
+reservas_producto,4,cantidad,"int unsigned",NO,,NULL,
+reservas_producto,5,estado,"enum('ACTIVA','CONSUMIDA','LIBERADA')",NO,,ACTIVA,
+reservas_producto,6,fecha,datetime,NO,,CURRENT_TIMESTAMP,DEFAULT_GENERATED

@@ -1,32 +1,51 @@
 
 # ==============================================
 # TOCO MADERA - SERVICIO DE AUTENTICACIÓN
-# Archivo: backend/app/services/auth_service.py
+#
+# Archivo:
+# backend/app/services/auth_service.py
+#
+# ETAPA 3.19 - TELÉFONO OBLIGATORIO
+#
+# FUNCIONES:
+# 1. Registrar clientes.
+# 2. Validar nombre, correo y contraseña.
+# 3. Exigir teléfono mexicano de 10 dígitos.
+# 4. Evitar correos duplicados.
+# 5. Asignar exclusivamente el rol CLIENTE.
+# 6. Guardar contraseñas cifradas.
+# 7. Permitir iniciar sesión con JWT.
+# 8. Devolver datos públicos del usuario.
+#
+# IMPORTANTE:
+# No modifica la estructura de MySQL.
+# Conserva la compatibilidad con usuarios antiguos.
 # ==============================================
 
 import re
 
-# Permite construir consultas SQLAlchemy.
+# Construcción de consultas SQLAlchemy.
 from sqlalchemy import select
 
 # Captura errores de restricciones de MySQL.
 from sqlalchemy.exc import IntegrityError
 
-# Generación de tokens de acceso.
+# Generación de tokens JWT.
 from flask_jwt_extended import create_access_token
 
 # Conexión compartida con MySQL.
 from app.extensions import db
 
-# Modelos de usuarios y roles.
+# Modelos existentes.
 from app.models.usuario import Usuario
 from app.models.rol import Rol
 
 
 class AuthService:
     """
-    Contiene la lógica del registro
-    y del inicio de sesión.
+    Servicio que contiene la lógica de registro,
+    inicio de sesión y representación pública
+    de los usuarios de Toco Madera.
     """
 
     # ==========================================
@@ -36,9 +55,15 @@ class AuthService:
     @staticmethod
     def usuario_publico(usuario):
         """
-        Devolver únicamente información pública.
+        Devuelve los datos públicos del usuario.
 
-        Nunca devolver password_hash.
+        Nunca incluye:
+        - password_hash
+        - contraseña original
+        - token JWT
+
+        El teléfono puede ser None en cuentas
+        registradas antes de esta actualización.
         """
 
         return {
@@ -57,20 +82,31 @@ class AuthService:
     @staticmethod
     def registrar_cliente(datos):
         """
-        Registrar una cuenta con rol CLIENTE.
+        Registra una cuenta nueva con rol CLIENTE.
+
+        El teléfono es obligatorio:
+        - Solo números.
+        - Exactamente 10 dígitos.
+        - Sin espacios ni guiones.
 
         Devuelve:
-        (respuesta, codigo_http)
+        (respuesta_json, codigo_http)
         """
 
-        # Comprobar que recibimos un objeto JSON.
+        # --------------------------------------
+        # A. COMPROBAR CUERPO JSON
+        # --------------------------------------
+
         if not isinstance(datos, dict):
             return {
                 "success": False,
                 "message": "Se requiere un objeto JSON."
             }, 400
 
-        # Obtener y limpiar los datos.
+        # --------------------------------------
+        # B. OBTENER DATOS
+        # --------------------------------------
+
         nombre = str(
             datos.get("nombre") or ""
         ).strip()
@@ -81,18 +117,27 @@ class AuthService:
 
         password = datos.get("password")
 
-        telefono = str(
-            datos.get("telefono") or ""
-        ).strip() or None
+        # Obtener el teléfono sin convertir
+        # tipos incorrectos automáticamente.
+        telefono = datos.get("telefono")
 
-        # Validar nombre.
+        # --------------------------------------
+        # C. VALIDAR NOMBRE
+        # --------------------------------------
+
         if not (2 <= len(nombre) <= 120):
             return {
                 "success": False,
-                "message": "El nombre debe tener entre 2 y 120 caracteres."
+                "message": (
+                    "El nombre debe tener entre "
+                    "2 y 120 caracteres."
+                )
             }, 400
 
-        # Validar formato y longitud del correo.
+        # --------------------------------------
+        # D. VALIDAR CORREO
+        # --------------------------------------
+
         patron_correo = (
             r"^[A-Za-z0-9._%+\-]+@"
             r"[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$"
@@ -107,24 +152,66 @@ class AuthService:
                 "message": "Ingresa un correo válido."
             }, 400
 
-        # Validar contraseña.
+        # --------------------------------------
+        # E. VALIDAR TELÉFONO OBLIGATORIO
+        # --------------------------------------
+
+        # Rechazar valores ausentes, números
+        # enviados como tipo numérico y otros
+        # tipos diferentes de texto.
+        if not isinstance(telefono, str):
+            return {
+                "success": False,
+                "message": (
+                    "El número de teléfono es obligatorio "
+                    "y debe contener exactamente 10 dígitos."
+                )
+            }, 400
+
+        # Eliminar espacios al principio y al final.
+        telefono = telefono.strip()
+
+        # Validar formato nacional mexicano.
+        #
+        # Ejemplo aceptado:
+        # 4771234567
+        #
+        # Ejemplos rechazados:
+        # 477123456
+        # 47712345678
+        # 477-123-4567
+        # abc1234567
+
+        if not re.fullmatch(r"[0-9]{10}", telefono):
+            return {
+                "success": False,
+                "message": (
+                    "El teléfono es obligatorio y debe "
+                    "contener exactamente 10 dígitos "
+                    "numéricos, sin espacios ni guiones."
+                )
+            }, 400
+
+        # --------------------------------------
+        # F. VALIDAR CONTRASEÑA
+        # --------------------------------------
+
         if (
             not isinstance(password, str)
             or not (8 <= len(password) <= 128)
         ):
             return {
                 "success": False,
-                "message": "La contraseña debe tener entre 8 y 128 caracteres."
+                "message": (
+                    "La contraseña debe tener entre "
+                    "8 y 128 caracteres."
+                )
             }, 400
 
-        # Validar teléfono si se proporciona.
-        if telefono and len(telefono) > 25:
-            return {
-                "success": False,
-                "message": "El teléfono supera los 25 caracteres."
-            }, 400
+        # --------------------------------------
+        # G. VERIFICAR CORREO DUPLICADO
+        # --------------------------------------
 
-        # Buscar un usuario con el mismo correo.
         existente = db.session.scalar(
             select(Usuario).where(
                 Usuario.correo == correo
@@ -137,7 +224,10 @@ class AuthService:
                 "message": "El correo ya está registrado."
             }, 409
 
-        # Buscar el rol CLIENTE en MySQL.
+        # --------------------------------------
+        # H. OBTENER EL ROL CLIENTE
+        # --------------------------------------
+
         rol_cliente = db.session.scalar(
             select(Rol).where(
                 Rol.nombre == "CLIENTE"
@@ -147,39 +237,66 @@ class AuthService:
         if rol_cliente is None:
             return {
                 "success": False,
-                "message": "El rol CLIENTE no está configurado."
+                "message": (
+                    "El rol CLIENTE no está configurado."
+                )
             }, 500
 
-        # Crear la cuenta.
-        # IMPORTANTE: no aceptamos id_rol del cliente.
+        # --------------------------------------
+        # I. CREAR USUARIO
+        # --------------------------------------
+
+        # El rol se obtiene desde MySQL.
+        # Nunca se acepta id_rol desde el
+        # formulario público de registro.
+
         usuario = Usuario(
             id_rol=rol_cliente.id_rol,
             nombre=nombre,
             correo=correo,
+
+            # Ahora siempre contiene 10 dígitos.
             telefono=telefono,
+
             activo=True
         )
 
-        # Convertir la contraseña a hash.
+        # --------------------------------------
+        # J. CIFRAR CONTRASEÑA
+        # --------------------------------------
+
+        # Utiliza el método del modelo Usuario.
+        # Nunca guardamos contraseñas en texto plano.
+
         usuario.establecer_password(password)
 
+        # --------------------------------------
+        # K. GUARDAR EN MYSQL
+        # --------------------------------------
+
         try:
-            # Preparar el nuevo registro.
             db.session.add(usuario)
 
-            # Guardar la transacción en MySQL.
+            # Confirmar la transacción.
             db.session.commit()
 
         except IntegrityError:
-            # Revertir si MySQL rechaza el registro.
+
+            # Deshacer cualquier inserción parcial.
             db.session.rollback()
 
             return {
                 "success": False,
-                "message": "No se pudo registrar la cuenta. Verifica el correo."
+                "message": (
+                    "No se pudo registrar la cuenta. "
+                    "Verifica el correo."
+                )
             }, 409
 
-        # Devolver el usuario sin su contraseña.
+        # --------------------------------------
+        # L. RESPUESTA EXITOSA
+        # --------------------------------------
+
         return {
             "success": True,
             "message": "Cliente registrado correctamente.",
@@ -195,10 +312,18 @@ class AuthService:
     @staticmethod
     def iniciar_sesion(datos):
         """
-        Comprobar correo y contraseña.
+        Verifica correo y contraseña.
 
-        Si son correctos, emitir un JWT.
+        Cuando las credenciales son correctas,
+        devuelve un JWT y el perfil del usuario.
+
+        Este proceso funciona tanto para CLIENTE
+        como para ADMIN.
         """
+
+        # --------------------------------------
+        # A. VALIDAR JSON
+        # --------------------------------------
 
         if not isinstance(datos, dict):
             return {
@@ -206,30 +331,43 @@ class AuthService:
                 "message": "Se requiere un objeto JSON."
             }, 400
 
+        # --------------------------------------
+        # B. OBTENER CREDENCIALES
+        # --------------------------------------
+
         correo = datos.get("correo")
         password = datos.get("password")
 
-        # Validar los tipos de datos recibidos.
         if (
             not isinstance(correo, str)
             or not isinstance(password, str)
         ):
             return {
                 "success": False,
-                "message": "Correo y contraseña son obligatorios."
+                "message": (
+                    "Correo y contraseña son obligatorios."
+                )
             }, 400
 
         correo = correo.strip().lower()
 
-        # Localizar el usuario en MySQL.
+        # --------------------------------------
+        # C. BUSCAR USUARIO
+        # --------------------------------------
+
         usuario = db.session.scalar(
             select(Usuario).where(
                 Usuario.correo == correo
             )
         )
 
-        # Usamos un mensaje genérico para no
-        # revelar qué dato de acceso fue incorrecto.
+        # --------------------------------------
+        # D. VERIFICAR CONTRASEÑA
+        # --------------------------------------
+
+        # Respuesta genérica para no revelar
+        # si un correo específico existe.
+
         if (
             usuario is None
             or not usuario.verificar_password(password)
@@ -239,18 +377,32 @@ class AuthService:
                 "message": "Credenciales incorrectas."
             }, 401
 
-        # Comprobar que la cuenta está activa.
+        # --------------------------------------
+        # E. VERIFICAR CUENTA ACTIVA
+        # --------------------------------------
+
         if not usuario.activo:
             return {
                 "success": False,
                 "message": "La cuenta está desactivada."
             }, 403
 
-        # El identificador del token será texto.
-        # No almacenamos la contraseña en el JWT.
+        # --------------------------------------
+        # F. GENERAR JWT
+        # --------------------------------------
+
+        # El token contiene como identidad
+        # el identificador del usuario.
+        #
+        # No incluye contraseñas.
+
         token = create_access_token(
             identity=str(usuario.id_usuario)
         )
+
+        # --------------------------------------
+        # G. RESPONDER AL FRONTEND
+        # --------------------------------------
 
         return {
             "success": True,

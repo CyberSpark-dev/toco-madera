@@ -1,0 +1,16 @@
+TABLE_NAME,TABLE_TYPE
+consumos_produccion,"BASE TABLE"
+entregas,"BASE TABLE"
+lotes_producto,"BASE TABLE"
+materiales,"BASE TABLE"
+movimientos_material,"BASE TABLE"
+movimientos_producto,"BASE TABLE"
+ordenes_produccion,"BASE TABLE"
+pagos,"BASE TABLE"
+pedido_detalles,"BASE TABLE"
+pedidos,"BASE TABLE"
+productos,"BASE TABLE"
+receta_materiales,"BASE TABLE"
+recetas,"BASE TABLE"
+reservas_producto,"BASE TABLE"
+vw_saldos_pedidos,VIEW

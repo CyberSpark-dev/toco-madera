@@ -372,7 +372,12 @@
           <!-- DETALLES DE LA COMPRA -->
           <div class="mt-8">
             <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h4 class="text-lg font-bold text-nogal">Materias primas</h4>
+              <div>
+                <h4 class="text-lg font-bold text-nogal">Materias primas</h4>
+                <p class="mt-1 text-sm text-gray-500">
+                  {{ formulario.detalles.length }} material(es) en esta compra. Puedes agregar más al final de la lista.
+                </p>
+              </div>
 
               <button
                 type="button"
@@ -396,6 +401,7 @@
                     [id]="'material-' + i"
                     [name]="'material-' + i"
                     [(ngModel)]="detalle.id_material"
+                    (ngModelChange)="cambiarMaterial(detalle, $event)"
                     required
                     class="w-full rounded-lg border border-gray-300 p-3"
                   >
@@ -438,13 +444,35 @@
                     inputmode="decimal"
                     [(ngModel)]="detalle.costo_unitario"
                     required
-                    placeholder="1.0000"
+                    placeholder="Costo real por unidad"
                     class="w-full rounded-lg border border-gray-300 p-3"
                   />
+
+                  <p class="mt-1 text-xs text-gray-500">
+                    @if (tieneHistorialCosto(detalle.id_material)) {
+                      Sugerido: último costo de compra recibida. Puedes modificarlo.
+                    } @else {
+                      Sin costo histórico: introduce el costo cotizado por tu proveedor.
+                    }
+                  </p>
 
                   <p class="mt-2 text-xs text-gray-500">
                     Subtotal: ${{ subtotalDetalle(detalle).toFixed(2) }}
                   </p>
+                  <p class="mt-1 text-xs text-gray-600">
+                    Precio base en catálogo:
+                    @if (costoBaseMaterial(detalle.id_material)) {
+                      ${{ costoBaseMaterial(detalle.id_material) }}
+                    } @else {
+                      Sin precio base
+                    }
+                  </p>
+                  <button type="button"
+                    (click)="guardarCostoBase(detalle)"
+                    [disabled]="guardando() || guardandoCostoBase() || !detalle.id_material"
+                    class="mt-2 rounded-md border border-terracota px-2 py-1 text-xs font-semibold text-terracota hover:bg-crema disabled:opacity-50">
+                    {{ guardandoCostoBase() ? 'Guardando precio...' : 'Guardar este precio como base' }}
+                  </button>
                 </div>
 
                 <div class="flex items-end">
@@ -459,11 +487,36 @@
                 </div>
               </div>
             }
+
+            <!-- ==================================================
+                 ACCIÓN AL FINAL DE LA LISTA - MEJORA UX
+                 El usuario ya no necesita regresar al encabezado
+                 para incorporar otro material.
+                 Se reutiliza agregarDetalle() y no modifica costos.
+            =================================================== -->
+            <div class="mt-2 flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#D6BBA1] bg-[#FFF9F2] px-4 py-5 text-center">
+              <p class="text-sm text-gray-600">
+                ¿Necesitas registrar otra materia prima en esta compra?
+              </p>
+              <button
+                type="button"
+                (click)="agregarDetalle()"
+                [disabled]="guardando() || guardandoCostoBase()"
+                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-nogal px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-terracota focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#E8C8AB] disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Agregar otro material al final de la compra"
+              >
+                <span aria-hidden="true" class="text-lg leading-none">+</span>
+                Agregar otro material
+              </button>
+              <p class="text-xs text-gray-500">
+                Agregados: {{ formulario.detalles.length }} · Los costos de los demás materiales se conservan.
+              </p>
+            </div>
           </div>
 
           <!-- TOTAL Y ACCIONES -->
           <div
-            class="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-gray-200 pt-6"
+            class="sticky bottom-0 z-20 -mx-6 mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-[#E8D6BF] bg-white/95 px-6 py-4 shadow-[0_-5px_20px_rgba(75,46,31,0.08)] backdrop-blur-sm supports-[backdrop-filter]:bg-white/90"
           >
             <div>
               <p class="text-sm text-gray-600">Total estimado de compra</p>
