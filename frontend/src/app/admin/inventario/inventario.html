@@ -1,0 +1,367 @@
+<!-- =====================================================
+     TOCO MADERA - INVENTARIO Y MOVIMIENTOS
+     Archivo: admin/inventario/inventario.html
+     ETAPA 3.17.6
+===================================================== -->
+
+<div class="min-h-screen bg-crema">
+  <!-- ENCABEZADO -->
+  <header class="bg-nogal px-6 py-5 text-white">
+    <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="font-brand text-xl font-bold">Toco Madera | Administración</h1>
+
+        <p class="mt-1 text-sm text-[#F9E9D5]">Inventario de materias primas</p>
+      </div>
+
+      <div class="flex flex-wrap gap-3">
+        <a
+          routerLink="/admin/dashboard"
+          class="rounded-lg border border-white/40 px-4 py-2 text-sm font-semibold hover:bg-white/10"
+        >
+          Dashboard
+        </a>
+
+        <a
+          routerLink="/admin/compras"
+          class="rounded-lg border border-white/40 px-4 py-2 text-sm font-semibold hover:bg-white/10"
+        >
+          Compras
+        </a>
+
+        <a
+          routerLink="/admin/materiales"
+          class="rounded-lg border border-white/40 px-4 py-2 text-sm font-semibold hover:bg-white/10"
+        >
+          Materiales
+        </a>
+
+        <button
+          type="button"
+          (click)="cerrarSesion()"
+          class="rounded-lg bg-terracota px-4 py-2 text-sm font-semibold hover:bg-[#8C4825]"
+        >
+          Cerrar sesión
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- CONTENIDO -->
+  <main class="mx-auto max-w-7xl px-6 py-10">
+    <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h2 class="font-brand text-3xl font-bold text-nogal">Inventario de materiales</h2>
+
+        <p class="mt-2 text-gray-600">
+          Existencias calculadas a partir de entradas, consumos y otros movimientos registrados.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        (click)="cargarInventario(); cargarMovimientos()"
+        class="rounded-lg bg-terracota px-5 py-3 font-semibold text-white hover:bg-nogal"
+      >
+        Actualizar datos
+      </button>
+    </div>
+
+    <!-- MENSAJES -->
+    @if (errorInventario()) {
+      <div
+        role="alert"
+        class="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+      >
+        {{ errorInventario() }}
+      </div>
+    }
+
+    @if (errorUnidades()) {
+      <div
+        role="status"
+        class="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+      >
+        {{ errorUnidades() }}
+      </div>
+    }
+
+    <!-- ===============================================
+         1. INDICADORES
+    ================================================ -->
+
+    <section class="mb-8 grid gap-4 md:grid-cols-3">
+      <div class="rounded-xl bg-white p-6 shadow-sm">
+        <p class="text-sm text-gray-600">Materias primas registradas</p>
+
+        <p class="mt-3 text-3xl font-bold text-nogal">
+          {{ totalMateriales() }}
+        </p>
+      </div>
+
+      <div class="rounded-xl bg-white p-6 shadow-sm">
+        <p class="text-sm text-gray-600">Por debajo del stock mínimo</p>
+
+        <p class="mt-3 text-3xl font-bold text-terracota">
+          {{ totalAlertas() }}
+        </p>
+      </div>
+
+      <div class="rounded-xl bg-white p-6 shadow-sm">
+        <p class="text-sm text-gray-600">Sin existencias o con saldo negativo</p>
+
+        <p class="mt-3 text-3xl font-bold text-nogal">
+          {{ sinExistencia() }}
+        </p>
+      </div>
+    </section>
+
+    <!-- ===============================================
+         2. BÚSQUEDA Y FILTROS
+    ================================================ -->
+
+    <section class="mb-6 rounded-xl bg-white p-5 shadow-sm">
+      <div class="grid gap-4 md:grid-cols-3">
+        <div class="md:col-span-2">
+          <label for="buscarInventario" class="mb-2 block text-sm font-medium text-nogal">
+            Buscar materia prima
+          </label>
+
+          <input
+            id="buscarInventario"
+            type="search"
+            [ngModel]="busqueda()"
+            (ngModelChange)="busqueda.set($event)"
+            placeholder="Buscar por SKU o nombre"
+            class="w-full rounded-lg border border-gray-300 p-3 text-sm"
+          />
+        </div>
+
+        <div>
+          <label for="filtroInventario" class="mb-2 block text-sm font-medium text-nogal">
+            Mostrar
+          </label>
+
+          <select
+            id="filtroInventario"
+            [ngModel]="filtroStock()"
+            (ngModelChange)="filtroStock.set($event)"
+            class="w-full rounded-lg border border-gray-300 p-3 text-sm"
+          >
+            <option value="TODOS">Todos</option>
+            <option value="BAJO_MINIMO">Bajo mínimo</option>
+            <option value="SIN_EXISTENCIA">Sin existencia</option>
+            <option value="ACTIVOS">Solo activos</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===============================================
+         3. EXISTENCIAS DE MATERIALES
+    ================================================ -->
+
+    <section class="rounded-xl bg-white shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-5">
+        <h3 class="text-lg font-bold text-nogal">Existencias por material</h3>
+
+        <p class="text-sm text-gray-600">
+          Mostrando {{ inventarioFiltrado().length }} de {{ inventario().length }}
+        </p>
+      </div>
+
+      @if (cargandoInventario()) {
+        <div class="p-10 text-center text-gray-600">Consultando existencias en MySQL...</div>
+      } @else if (inventarioFiltrado().length === 0) {
+        <div class="p-10 text-center text-gray-600">
+          No hay materiales que coincidan con los filtros.
+        </div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-[#F9E9D5] text-nogal">
+              <tr>
+                <th scope="col" class="px-5 py-4">Material</th>
+                <th scope="col" class="px-5 py-4">Unidad</th>
+                <th scope="col" class="px-5 py-4">Existencia</th>
+                <th scope="col" class="px-5 py-4">Mínimo</th>
+                <th scope="col" class="px-5 py-4">Alerta</th>
+                <th scope="col" class="px-5 py-4">Acción</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (material of inventarioFiltrado(); track material.id_material) {
+                <tr class="border-t border-gray-100 hover:bg-[#FFF9F2]">
+                  <td class="px-5 py-4">
+                    <p class="font-semibold text-nogal">
+                      {{ material.nombre }}
+                    </p>
+
+                    <p class="mt-1 text-xs text-gray-500">
+                      {{ material.sku }}
+                    </p>
+
+                    @if (!material.activo) {
+                      <span class="text-xs text-gray-500"> Material inactivo </span>
+                    }
+                  </td>
+
+                  <td class="px-5 py-4 text-gray-700">
+                    {{ nombreUnidad(material.id_unidad) }}
+                  </td>
+
+                  <td class="px-5 py-4 font-bold text-nogal">
+                    {{ cantidadTexto(material.existencia) }}
+                  </td>
+
+                  <td class="px-5 py-4 text-gray-700">
+                    {{ cantidadTexto(material.stock_minimo) }}
+                  </td>
+
+                  <td class="px-5 py-4">
+                    @if (material.bajo_minimo) {
+                      <span
+                        class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800"
+                      >
+                        Bajo mínimo
+                      </span>
+                    } @else {
+                      <span
+                        class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800"
+                      >
+                        Sin alerta
+                      </span>
+                    }
+                  </td>
+
+                  <td class="px-5 py-4">
+                    <button
+                      type="button"
+                      (click)="seleccionarMaterial(material.id_material)"
+                      class="rounded-lg border border-terracota px-3 py-2 text-xs font-semibold text-terracota hover:bg-crema"
+                    >
+                      Ver movimientos
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <!-- ===============================================
+         4. HISTORIAL DE MOVIMIENTOS
+    ================================================ -->
+
+    <section id="historial-movimientos" class="mt-8 scroll-mt-6 rounded-xl bg-white shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-5">
+        <div>
+          <h3 class="text-lg font-bold text-nogal">Historial de movimientos</h3>
+
+          <p class="mt-1 text-xs text-gray-500">
+            Se muestran hasta 100 movimientos recientes del filtro seleccionado.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          (click)="mostrarTodosMovimientos()"
+          class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-nogal hover:bg-gray-50"
+        >
+          Mostrar todos
+        </button>
+      </div>
+
+      @if (materialSeleccionado() !== null) {
+        <div class="border-b border-gray-100 bg-[#FFF9F2] px-5 py-3 text-sm text-nogal">
+          Filtrando por material:
+          <strong>ID {{ materialSeleccionado() }}</strong>
+        </div>
+      }
+
+      @if (errorMovimientos()) {
+        <div
+          role="alert"
+          class="m-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+        >
+          {{ errorMovimientos() }}
+        </div>
+      }
+
+      @if (cargandoMovimientos()) {
+        <div class="p-10 text-center text-gray-600">Consultando movimientos...</div>
+      } @else if (movimientos().length === 0) {
+        <div class="p-10 text-center text-gray-600">
+          No existen movimientos registrados para el filtro seleccionado.
+        </div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-[#F9E9D5] text-nogal">
+              <tr>
+                <th scope="col" class="px-5 py-4">Movimiento</th>
+                <th scope="col" class="px-5 py-4">Fecha</th>
+                <th scope="col" class="px-5 py-4">Material</th>
+                <th scope="col" class="px-5 py-4">Tipo</th>
+                <th scope="col" class="px-5 py-4">Cantidad</th>
+                <th scope="col" class="px-5 py-4">Referencia</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (movimiento of movimientos(); track movimiento.id_movimiento) {
+                <tr class="border-t border-gray-100">
+                  <td class="px-5 py-4 font-semibold text-nogal">
+                    #{{ movimiento.id_movimiento }}
+                  </td>
+
+                  <td class="px-5 py-4 text-gray-600">
+                    {{ movimiento.fecha }}
+                  </td>
+
+                  <td class="px-5 py-4">
+                    <p class="font-semibold text-nogal">
+                      {{ movimiento.nombre_material }}
+                    </p>
+
+                    <p class="mt-1 text-xs text-gray-500">
+                      {{ movimiento.sku_material }}
+                    </p>
+                  </td>
+
+                  <td class="px-5 py-4 text-gray-700">
+                    {{ movimiento.tipo }}
+                  </td>
+
+                  <td class="px-5 py-4">
+                    <span
+                      class="font-bold"
+                      [class.text-green-700]="+movimiento.cantidad_firmada > 0"
+                      [class.text-red-700]="+movimiento.cantidad_firmada < 0"
+                    >
+                      {{ +movimiento.cantidad_firmada > 0 ? '+' : ''
+                      }}{{ movimiento.cantidad_firmada }}
+                    </span>
+                  </td>
+
+                  <td class="px-5 py-4 text-xs text-gray-600">
+                    @if (movimiento.id_detalle_compra !== null) {
+                      Compra, detalle: #{{ movimiento.id_detalle_compra }}
+                    } @else if (movimiento.id_orden_produccion !== null) {
+                      Producción: #{{ movimiento.id_orden_produccion }}
+                    } @else {
+                      {{ movimiento.observaciones || '—' }}
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </main>
+</div>

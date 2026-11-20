@@ -1,0 +1,371 @@
+<!-- =====================================================
+     TOCO MADERA - PÁGINA PRINCIPAL DEL CLIENTE
+
+     Archivo:
+     frontend/src/app/cliente/inicio/inicio.html
+
+     ETAPA 3.18 - NAVEGACIÓN Y AUTENTICACIÓN
+
+     CONTENIDO:
+     1. Menú dinámico según sesión y rol.
+     2. Presentación de la empresa.
+     3. Navegación al catálogo.
+     4. Catálogo conectado a MySQL.
+     5. Acceso al carrito.
+     6. Acceso a historial de pedidos.
+     7. Inicio y cierre de sesión.
+
+     Se conservan los estados del catálogo:
+     - Cargando
+     - Error
+     - Vacío
+     - Productos disponibles
+===================================================== -->
+
+<div class="min-h-screen bg-crema">
+  <!-- ================================================
+       1. ENCABEZADO Y NAVEGACIÓN
+  ================================================ -->
+
+  <header class="bg-white shadow-sm">
+    <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 p-5">
+      <!-- NOMBRE COMERCIAL -->
+      <a routerLink="/" class="font-brand text-2xl font-bold text-nogal"> Toco Madera </a>
+
+      <!-- ============================================
+           MENÚ DINÁMICO
+      ============================================ -->
+
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- ----------------------------------------
+             PRODUCTOS
+        ----------------------------------------- -->
+
+        <button
+          type="button"
+          (click)="irAlCatalogo()"
+          class="rounded-lg px-4 py-2 text-sm font-semibold text-nogal transition-colors hover:bg-crema"
+        >
+          Productos
+        </button>
+
+        <!-- ----------------------------------------
+             CARRITO DE COMPRAS
+
+             Siempre disponible, incluso cuando
+             todavía no existe una sesión.
+        ----------------------------------------- -->
+
+        <a
+          routerLink="/cliente/carrito"
+          class="inline-flex items-center gap-2 rounded-lg bg-terracota px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-nogal"
+          aria-label="Abrir carrito de compras"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="19"
+            height="19"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path
+              d="M1 1h4l2.68 13.39a2 2 0 0 0 2
+                 1.61h9.72a2 2 0 0 0
+                 2-1.61L23 6H6"
+            ></path>
+          </svg>
+
+          Mi carrito
+
+          <!-- Contador de artículos -->
+          @if (carrito.cantidadTotal() > 0) {
+            <span class="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-terracota">
+              {{ carrito.cantidadTotal() }}
+            </span>
+          }
+        </a>
+
+        <!-- ========================================
+             USUARIO CON SESIÓN ACTIVA
+        ======================================== -->
+
+        @if (auth.autenticado()) {
+          <!-- Nombre del usuario -->
+          <span class="max-w-44 truncate text-sm font-semibold text-nogal">
+            Hola, {{ auth.usuario()?.nombre }}
+          </span>
+
+          <!-- ------------------------------------
+               OPCIONES DEL CLIENTE
+          ------------------------------------- -->
+
+          @if (auth.esCliente()) {
+            <a
+              routerLink="/cliente/mis-pedidos"
+              class="rounded-lg border border-terracota px-4 py-3 text-sm font-semibold text-terracota transition-colors hover:bg-crema"
+            >
+              Mis pedidos
+            </a>
+          }
+
+          <!-- ------------------------------------
+               OPCIONES DEL ADMINISTRADOR
+          ------------------------------------- -->
+
+          @if (auth.esAdministrador()) {
+            <a
+              routerLink="/admin/dashboard"
+              class="rounded-lg border border-terracota px-4 py-3 text-sm font-semibold text-terracota transition-colors hover:bg-crema"
+            >
+              Panel administrativo
+            </a>
+          }
+
+          <!-- ------------------------------------
+               CERRAR SESIÓN
+          ------------------------------------- -->
+
+          <button
+            type="button"
+            (click)="cerrarSesionCliente()"
+            class="rounded-lg border border-red-300 px-4 py-3 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50"
+          >
+            Cerrar sesión
+          </button>
+        } @else {
+          <!-- ======================================
+               USUARIO SIN SESIÓN
+          ====================================== -->
+
+          <a
+            routerLink="/login"
+            class="rounded-lg border border-terracota px-4 py-3 text-sm font-semibold text-terracota transition-colors hover:bg-crema"
+          >
+            Iniciar sesión
+          </a>
+
+          <a
+            routerLink="/registro"
+            class="rounded-lg bg-nogal px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-terracota"
+          >
+            Crear cuenta
+          </a>
+        }
+      </div>
+    </nav>
+  </header>
+
+  <!-- ================================================
+       2. CONTENIDO PRINCIPAL
+  ================================================ -->
+
+  <main class="mx-auto max-w-7xl px-6 py-16">
+    <!-- ============================================
+         PRESENTACIÓN DE LA EMPRESA
+    ============================================ -->
+
+    <section class="mb-16 text-center">
+      <h1 class="mb-5 font-brand text-4xl font-bold text-nogal md:text-5xl">
+        {{ nombreEmpresa }}
+      </h1>
+
+      <p class="mb-6 text-2xl text-terracota">
+        {{ eslogan }}
+      </p>
+
+      <p class="mx-auto max-w-2xl text-lg text-gray-700">
+        Fabricamos artículos de madera personalizados mediante grabado artesanal.
+      </p>
+
+      <!-- ======================================
+           BOTONES DE PRESENTACIÓN
+      ====================================== -->
+
+      <div class="mt-8 flex flex-wrap justify-center gap-4">
+        <!-- Desplazar directamente al catálogo -->
+        <button
+          type="button"
+          (click)="irAlCatalogo()"
+          class="rounded-lg bg-nogal px-6 py-3 font-semibold text-white transition-colors hover:bg-terracota"
+        >
+          Explorar productos
+        </button>
+
+        <!-- Acceso al carrito -->
+        <a
+          routerLink="/cliente/carrito"
+          class="rounded-lg border-2 border-terracota px-6 py-3 font-semibold text-terracota transition-colors hover:bg-white"
+        >
+          Ir a comprar
+        </a>
+      </div>
+    </section>
+
+    <!-- ================================================
+         3. CATÁLOGO DE PRODUCTOS
+    ================================================ -->
+
+    <section id="catalogo" class="scroll-mt-8">
+      <!-- ======================================
+           ENCABEZADO DEL CATÁLOGO
+      ====================================== -->
+
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold text-nogal">Nuestros productos</h2>
+
+        <p class="mt-2 text-gray-600">
+          Conoce nuestros artículos artesanales y personalízalos a tu estilo.
+        </p>
+      </div>
+
+      <!-- ======================================
+           ESTADO 1: CARGANDO PRODUCTOS
+      ====================================== -->
+
+      @if (cargandoProductos()) {
+        <div role="status" class="rounded-xl bg-white p-10 text-center shadow-sm">
+          <p class="text-lg font-semibold text-nogal">Cargando productos...</p>
+
+          <p class="mt-2 text-sm text-gray-500">Estamos consultando nuestro catálogo.</p>
+        </div>
+      }
+
+      <!-- ======================================
+           ESTADO 2: ERROR DE CONEXIÓN
+      ====================================== -->
+
+      @else if (errorProductos()) {
+        <div role="alert" class="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
+          <h3 class="text-xl font-semibold text-red-700">No pudimos cargar el catálogo</h3>
+
+          <p class="mt-3 text-sm text-red-600">
+            {{ errorProductos() }}
+          </p>
+
+          <!-- Reintentar consulta a Flask -->
+          <button
+            type="button"
+            (click)="cargarProductos()"
+            class="mt-5 rounded-lg bg-terracota px-6 py-3 font-semibold text-white hover:bg-nogal"
+          >
+            Intentar nuevamente
+          </button>
+        </div>
+      }
+
+      <!-- ======================================
+           ESTADO 3: CATÁLOGO VACÍO
+      ====================================== -->
+
+      @else if (productos().length === 0) {
+        <div class="rounded-xl bg-white p-10 text-center shadow-sm">
+          <h3 class="text-xl font-semibold text-nogal">No hay productos disponibles</h3>
+
+          <p class="mt-3 text-gray-600">
+            Próximamente tendremos nuevos artículos de madera para ti.
+          </p>
+        </div>
+      }
+
+      <!-- ======================================
+           ESTADO 4: PRODUCTOS DESDE MYSQL
+      ====================================== -->
+
+      @else {
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <!-- Recorrer productos registrados -->
+          @for (producto of productos(); track producto.id_producto) {
+            <article
+              class="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-shadow duration-200 hover:shadow-lg"
+            >
+              <!-- ==================================
+                   IMAGEN PROVISIONAL
+              ================================== -->
+
+              <div class="flex h-44 items-center justify-center bg-[#F9E9D5] px-6 text-center">
+                <span class="font-brand text-xl font-semibold text-nogal">
+                  {{ producto.nombre }}
+                </span>
+              </div>
+
+              <!-- ==================================
+                   INFORMACIÓN DEL PRODUCTO
+              ================================== -->
+
+              <div class="flex flex-1 flex-col p-6">
+                <!-- SKU -->
+                <p class="mb-2 text-xs uppercase tracking-wide text-gray-500">
+                  Código: {{ producto.sku }}
+                </p>
+
+                <!-- Nombre -->
+                <h3 class="mb-3 text-xl font-semibold text-nogal">
+                  {{ producto.nombre }}
+                </h3>
+
+                <!-- Descripción -->
+                <p class="mb-5 min-h-12 text-sm text-gray-600">
+                  {{ producto.descripcion || 'Artículo artesanal de madera.' }}
+                </p>
+
+                <!-- Precio de catálogo -->
+                <p class="mb-4 text-2xl font-bold text-terracota">
+                  {{ producto.precio_lista | currency: 'MXN' : 'symbol' : '1.2-2' }}
+                </p>
+
+                <!-- ==================================
+                     PERSONALIZACIÓN
+                ================================== -->
+
+                @if (producto.permite_grabado) {
+                  <div class="rounded-md bg-crema px-3 py-2">
+                    <p class="text-sm text-nogal">Personalización con grabado disponible</p>
+
+                    <p class="mt-1 text-xs text-gray-600">
+                      Hasta
+                      {{ producto.max_caracteres_grabado }}
+                      caracteres.
+                    </p>
+                  </div>
+                } @else {
+                  <div class="rounded-md bg-gray-100 px-3 py-2">
+                    <p class="text-sm text-gray-600">Producto sin grabado personalizado.</p>
+                  </div>
+                }
+
+                <!-- ==================================
+                     ACCIÓN COMERCIAL
+                ================================== -->
+
+                <div class="mt-auto pt-6">
+                  <!--
+                    Abre la pantalla de carrito,
+                    donde se selecciona el producto,
+                    cantidad y grabado.
+
+                    Todavía no agrega automáticamente
+                    este artículo específico.
+                  -->
+
+                  <a
+                    routerLink="/cliente/carrito"
+                    class="flex w-full items-center justify-center rounded-lg bg-terracota px-5 py-3 font-semibold text-white transition-colors hover:bg-nogal"
+                  >
+                    {{ producto.permite_grabado ? 'Comprar / Personalizar' : 'Comprar producto' }}
+                  </a>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </main>
+</div>
