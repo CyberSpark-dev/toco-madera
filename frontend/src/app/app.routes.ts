@@ -161,6 +161,32 @@ export const routes: Routes = [
     loadComponent: () => import('./admin/recetas/recetas').then((m) => m.RecetasAdmin),
   },
 
+  /**
+   * ==================================================
+   * TOCO MADERA - ETAPA 3.18
+   * RUTAS DEL CLIENTE
+   * ==================================================
+   */
+
+  {
+    path: 'cliente/carrito',
+    title: 'Toco Madera | Carrito',
+    loadComponent: () => import('./cliente/carrito/carrito').then((m) => m.CarritoCliente),
+  },
+
+  {
+    path: 'cliente/checkout',
+    title: 'Toco Madera | Checkout',
+    loadComponent: () => import('./cliente/checkout/checkout').then((m) => m.CheckoutCliente),
+  },
+
+  {
+    path: 'cliente/mis-pedidos',
+    title: 'Toco Madera | Mis pedidos',
+    loadComponent: () =>
+      import('./cliente/mis-pedidos/mis-pedidos').then((m) => m.MisPedidosCliente),
+  },
+
   // ====================================================
   // 6. RUTA DESCONOCIDA
   // ====================================================

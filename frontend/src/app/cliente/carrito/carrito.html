@@ -1,0 +1,152 @@
+<!-- Toco Madera 3.18.4 | Catálogo y carrito responsive -->
+<div class="min-h-screen bg-[#F9E9D5] text-[#4B2E1F]">
+  <header class="bg-[#4B2E1F] px-5 py-5 text-white">
+    <nav class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="text-xl font-bold">Toco Madera</h1>
+        <p class="text-sm text-[#F9E9D5]">Catálogo y carrito de compras</p>
+      </div>
+      <div class="flex flex-wrap gap-3 text-sm">
+        <a routerLink="/" class="rounded-lg border border-white/40 px-4 py-2">Inicio</a>
+        <a routerLink="/cliente/mis-pedidos" class="rounded-lg border border-white/40 px-4 py-2">Mis pedidos</a>
+        <a routerLink="/cliente/checkout" class="rounded-lg bg-[#A65A2E] px-4 py-2 font-semibold">
+          Checkout ({{ carrito.cantidadTotal() }})
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-6xl space-y-8 px-5 py-9">
+    <div>
+      <h2 class="text-3xl font-bold">Productos artesanales</h2>
+      <p class="mt-2 text-gray-700">Selecciona tus productos, cantidades y grabados personalizados.</p>
+    </div>
+
+    @if (mensaje()) {
+      <div role="status" class="rounded-xl border border-green-300 bg-green-50 p-4 text-green-900">{{ mensaje() }}</div>
+    }
+    @if (error()) {
+      <div role="alert" class="rounded-xl border border-red-300 bg-red-50 p-4 text-red-800">{{ error() }}</div>
+    }
+
+    <section class="rounded-xl bg-white p-5 shadow-sm">
+      <label for="busqueda" class="mb-2 block text-sm font-semibold">Buscar por nombre o SKU</label>
+      <input id="busqueda" type="search" class="w-full rounded-lg border border-gray-300 p-3"
+        placeholder="Buscar un producto..." [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" />
+      @if (cargando()) {
+        <p class="mt-5">Cargando catálogo...</p>
+      } @else if (productosFiltrados().length === 0) {
+        <p class="mt-5 text-gray-600">No se encontraron productos activos.</p>
+      } @else {
+        <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          @for (p of productosFiltrados(); track p.id_producto) {
+            <article class="flex flex-col justify-between rounded-xl border border-[#E8D6BF] p-5">
+              <div>
+                <p class="text-xs text-gray-500">{{ p.sku }}</p>
+                <h3 class="mt-1 text-lg font-bold">{{ p.nombre }}</h3>
+                <p class="mt-2 line-clamp-3 text-sm text-gray-600">{{ p.descripcion || 'Producto artesanal de Toco Madera.' }}</p>
+                @if (p.permite_grabado) {
+                  <p class="mt-2 text-xs font-semibold text-[#718063]">Admite grabado personalizado</p>
+                }
+              </div>
+              <div class="mt-5 flex flex-wrap items-center justify-between gap-2">
+                <p class="text-lg font-bold">{{ precio(p.precio_lista) }}</p>
+                <button type="button" (click)="seleccionar(p)"
+                  class="rounded-lg bg-[#A65A2E] px-4 py-2 font-semibold text-white hover:bg-[#4B2E1F]">
+                  Elegir
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    @if (elegido(); as producto) {
+      <section id="configurar-producto" class="scroll-mt-6 rounded-xl border border-[#A65A2E] bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap justify-between gap-3">
+          <h3 class="text-xl font-bold">Configurar: {{ producto.nombre }}</h3>
+          <button type="button" (click)="cancelarSeleccion()" class="font-semibold text-gray-600">Cerrar</button>
+        </div>
+        <form (ngSubmit)="agregar()" class="mt-5 grid gap-4 md:grid-cols-2">
+          <div>
+            <label for="cantidad" class="mb-2 block text-sm font-semibold">Cantidad (1–100)</label>
+            <input id="cantidad" name="cantidad" type="number" min="1" max="100" step="1" required
+              [(ngModel)]="cantidad" class="w-full rounded-lg border border-gray-300 p-3" />
+          </div>
+          <div>
+            <label for="grabado" class="mb-2 block text-sm font-semibold">Texto de grabado</label>
+            <input id="grabado" name="grabado" type="text" [(ngModel)]="grabado"
+              [disabled]="!producto.permite_grabado" [attr.maxlength]="producto.max_caracteres_grabado"
+              [placeholder]="producto.permite_grabado ? 'Texto a grabar' : 'No disponible para este producto'"
+              class="w-full rounded-lg border border-gray-300 p-3 disabled:bg-gray-100" />
+            @if (producto.permite_grabado) {
+              <p class="mt-1 text-xs text-gray-500">Máximo {{ producto.max_caracteres_grabado }} caracteres.</p>
+            }
+          </div>
+          <div class="md:col-span-2">
+            <label for="notas" class="mb-2 block text-sm font-semibold">Notas del artículo (opcional)</label>
+            <textarea id="notas" name="notas" rows="2" maxlength="200" [(ngModel)]="notas"
+              class="w-full rounded-lg border border-gray-300 p-3"></textarea>
+          </div>
+          <div class="md:col-span-2 flex flex-wrap items-center justify-between gap-3">
+            <p class="text-lg font-bold">Subtotal estimado: {{ precio(+producto.precio_lista * cantidad) }}</p>
+            <button type="submit" class="rounded-lg bg-[#A65A2E] px-6 py-3 font-bold text-white hover:bg-[#4B2E1F]">Agregar al carrito</button>
+          </div>
+        </form>
+      </section>
+    }
+
+    <section id="mi-carrito" class="scroll-mt-6 rounded-xl bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h3 class="text-2xl font-bold">Mi carrito ({{ carrito.cantidadTotal() }} unidades)</h3>
+        @if (!carrito.vacio()) {
+          <button type="button" (click)="carrito.vaciar()" class="text-sm font-semibold text-red-700">Vaciar carrito</button>
+        }
+      </div>
+
+      @if (carrito.vacio()) {
+        <p class="mt-5 text-gray-600">Tu carrito está vacío. Selecciona un producto del catálogo.</p>
+      } @else {
+        <div class="mt-5 space-y-4">
+          @for (item of carrito.items(); track item.id_linea) {
+            <div class="grid gap-4 rounded-lg border border-gray-200 p-4 md:grid-cols-4">
+              <div class="md:col-span-2">
+                <p class="font-bold">{{ item.nombre }}</p>
+                <p class="text-xs text-gray-500">{{ item.sku }}</p>
+                @if (item.texto_grabado) {
+                  <p class="mt-2 text-sm">Grabado: <strong>{{ item.texto_grabado }}</strong></p>
+                }
+                @if (item.notas) {
+                  <p class="mt-1 text-xs text-gray-600">Notas: {{ item.notas }}</p>
+                }
+                <button type="button" (click)="carrito.quitar(item.id_linea)"
+                  class="mt-3 text-sm font-semibold text-red-700">Eliminar artículo</button>
+              </div>
+              <div>
+                <label [for]="'cantidad-' + item.id_linea" class="mb-2 block text-xs font-semibold">Cantidad</label>
+                <input [id]="'cantidad-' + item.id_linea" type="number" min="1" max="100" step="1"
+                  [ngModel]="item.cantidad" (ngModelChange)="cantidadActualizada(item.id_linea, $event)"
+                  class="w-full rounded-lg border border-gray-300 p-2" />
+              </div>
+              <div class="text-right md:text-left">
+                <p class="text-sm text-gray-500">{{ precio(item.precio_estimado) }} / unidad</p>
+                <p class="mt-2 text-lg font-bold">{{ precio(+item.precio_estimado * item.cantidad) }}</p>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="mt-6 flex flex-wrap items-center justify-between gap-4 border-t pt-5">
+          <div>
+            <p class="text-sm text-gray-600">Total estimado (sin envío ni descuentos)</p>
+            <p class="text-2xl font-bold">{{ precio(carrito.subtotalEstimado()) }}</p>
+            <p class="mt-1 text-xs text-gray-500">Flask recalculará los importes al confirmar.</p>
+          </div>
+          <a routerLink="/cliente/checkout" class="rounded-lg bg-[#718063] px-6 py-3 font-bold text-white hover:bg-[#4B2E1F]">
+            Continuar al pago simulado
+          </a>
+        </div>
+      }
+    </section>
+  </main>
+</div>

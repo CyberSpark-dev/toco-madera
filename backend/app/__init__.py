@@ -128,6 +128,14 @@ from app.routes.admin_inventario_routes import admin_inventario_bp
 from app.routes.admin_receta_routes import admin_recetas_bp
 
 
+# ============================================================
+# ETAPA 3.18 - PEDIDOS Y PAGOS SIMULADOS
+# ============================================================
+
+from app.routes.cliente_pedido_routes import cliente_pedidos_bp
+
+
+
 
 # ============================================================
 # 3. APPLICATION FACTORY
@@ -339,6 +347,11 @@ def create_app():
 
     # Endpoints protegidos de recetas.
     app.register_blueprint(admin_recetas_bp)
+
+
+    # Rutas del cliente para pedidos y checkout.
+    app.register_blueprint(cliente_pedidos_bp)
+
 
 
 

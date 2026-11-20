@@ -1,27 +1,62 @@
-<!-- ==========================================
-     TOCO MADERA - PÁGINA LOGIN
-========================================== -->
+<!-- =====================================================
+     TOCO MADERA - PÁGINA DE INICIO DE SESIÓN
+     Archivo: frontend/src/app/auth/login/login.html
+
+     ETAPA 3.18 - CORRECCIONES DE NAVEGACIÓN
+
+     Funciones:
+     1. Permitir el inicio de sesión.
+     2. Mostrar errores de autenticación.
+     3. Permitir mostrar u ocultar contraseña.
+     4. Navegar al registro de clientes.
+     5. Regresar a la tienda o al carrito.
+     6. Informar sobre la continuidad del checkout.
+
+     La autenticación continúa gestionándose
+     desde login.ts y core/services/auth.ts.
+===================================================== -->
 
 <div class="min-h-screen bg-crema">
   <!-- ========================================
-       ENCABEZADO
+       1. ENCABEZADO
   ======================================== -->
+
   <header class="bg-white shadow-sm">
-    <nav class="mx-auto flex max-w-7xl items-center justify-between p-5">
+    <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 p-5">
+      <!-- IDENTIDAD COMERCIAL -->
       <a routerLink="/" class="font-brand text-2xl font-bold text-nogal"> Toco Madera </a>
 
-      <a routerLink="/" class="text-sm font-medium text-terracota hover:underline">
-        Volver al inicio
-      </a>
+      <!-- NAVEGACIÓN -->
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Regresar a la página principal -->
+        <a
+          routerLink="/"
+          class="rounded-lg px-3 py-2 text-sm font-medium text-terracota transition-colors hover:bg-crema"
+        >
+          ← Volver al inicio
+        </a>
+
+        <!-- Regresar a los artículos seleccionados -->
+        <a
+          routerLink="/cliente/carrito"
+          class="rounded-lg border border-terracota px-4 py-2 text-sm font-semibold text-terracota transition-colors hover:bg-crema"
+        >
+          Mi carrito
+        </a>
+      </div>
     </nav>
   </header>
 
   <!-- ========================================
-       CONTENEDOR DEL LOGIN
+       2. CONTENEDOR DEL LOGIN
   ======================================== -->
+
   <main class="flex min-h-[calc(100vh-85px)] items-center justify-center px-4 py-12">
     <section class="w-full max-w-md rounded-2xl border border-[#E8D6BF] bg-white p-8 shadow-lg">
-      <!-- IDENTIDAD DE MARCA -->
+      <!-- ====================================
+           IDENTIDAD DE MARCA
+      ==================================== -->
+
       <div class="mb-8 text-center">
         <div
           class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-nogal text-2xl font-bold text-white"
@@ -37,9 +72,29 @@
         </p>
       </div>
 
+      <!-- ====================================
+           TÍTULO
+      ==================================== -->
+
       <h2 class="mb-6 text-center text-xl font-semibold text-nogal">Iniciar sesión</h2>
 
-      <!-- CONFIRMACIÓN DE REGISTRO -->
+      <!-- ====================================
+           MENSAJE PARA CLIENTES EN CHECKOUT
+      ==================================== -->
+
+      <div class="mb-6 rounded-lg border border-[#E8D6BF] bg-[#FFF9F2] p-4">
+        <p class="text-sm font-semibold text-nogal">¿Estás realizando una compra?</p>
+
+        <p class="mt-2 text-sm text-gray-600">
+          Inicia sesión con tu cuenta de cliente. Si llegaste desde el checkout, podrás continuar
+          con tu pedido después de autenticarte.
+        </p>
+      </div>
+
+      <!-- ====================================
+           CONFIRMACIÓN DE REGISTRO
+      ==================================== -->
+
       @if (registroExitoso) {
         <div
           role="status"
@@ -49,7 +104,10 @@
         </div>
       }
 
-      <!-- MENSAJE DE ERROR -->
+      <!-- ====================================
+           MENSAJE DE ERROR
+      ==================================== -->
+
       @if (error()) {
         <div
           role="alert"
@@ -60,10 +118,14 @@
       }
 
       <!-- ====================================
-           FORMULARIO DE AUTENTICACIÓN
+           3. FORMULARIO DE AUTENTICACIÓN
       ==================================== -->
+
       <form #formLogin="ngForm" (ngSubmit)="iniciarSesion()" class="space-y-5">
-        <!-- CORREO ELECTRÓNICO -->
+        <!-- ==================================
+             CORREO ELECTRÓNICO
+        ================================== -->
+
         <div>
           <label for="correo" class="mb-2 block text-sm font-medium text-nogal">
             Correo electrónico
@@ -82,7 +144,10 @@
           />
         </div>
 
-        <!-- CONTRASEÑA -->
+        <!-- ==================================
+             CONTRASEÑA
+        ================================== -->
+
         <div>
           <label for="password" class="mb-2 block text-sm font-medium text-nogal">
             Contraseña
@@ -99,6 +164,7 @@
             class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm text-gray-900 focus:border-terracota focus:ring-terracota"
           />
 
+          <!-- MOSTRAR U OCULTAR CONTRASEÑA -->
           <button
             type="button"
             (click)="cambiarVisibilidad()"
@@ -108,7 +174,10 @@
           </button>
         </div>
 
-        <!-- BOTÓN INICIAR SESIÓN -->
+        <!-- ==================================
+             BOTÓN INICIAR SESIÓN
+        ================================== -->
+
         <button
           type="submit"
           [disabled]="formLogin.invalid || cargando()"
@@ -122,7 +191,10 @@
         </button>
       </form>
 
-      <!-- NAVEGACIÓN A REGISTRO -->
+      <!-- ====================================
+           4. NAVEGACIÓN A REGISTRO
+      ==================================== -->
+
       <div class="mt-8 border-t border-gray-200 pt-6 text-center">
         <p class="text-sm text-gray-600">¿Todavía no tienes una cuenta?</p>
 
@@ -131,6 +203,19 @@
           class="mt-2 inline-block font-semibold text-terracota hover:underline"
         >
           Crear cuenta de cliente
+        </a>
+      </div>
+
+      <!-- ====================================
+           5. REGRESAR A LA TIENDA
+      ==================================== -->
+
+      <div class="mt-6 text-center">
+        <a
+          routerLink="/"
+          class="text-sm font-medium text-gray-600 transition-colors hover:text-terracota"
+        >
+          Continuar explorando productos
         </a>
       </div>
     </section>

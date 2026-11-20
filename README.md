@@ -75,7 +75,7 @@ MySQL 8
 
 ## 5. Estructura principal del proyecto
 
-Esta estructura reúne las rutas y componentes **desarrollados hasta la Etapa 3.17**. Es una referencia de los archivos trabajados; el repositorio puede contener otros módulos, modelos, archivos SQL y recursos.
+Esta estructura reúne las rutas y componentes **desarrollados hasta la Etapa 3.18**. Es una referencia de los archivos trabajados; el repositorio puede contener otros módulos, modelos, archivos SQL y recursos.
 
 ```text
 toco-madera/
@@ -83,8 +83,7 @@ toco-madera/
 ├── backend/
 │   ├── run.py
 │   ├── requirements.txt                 # Si existe en el repositorio
-│   ├── scripts/
-│   │   └── crear_admin.py
+│   ├── crear_admin.py                   # Alta controlada de un ADMIN
 │   ├── .venv/                           # Local; nunca versionar
 │   └── app/
 │       ├── __init__.py                 # Application Factory y Blueprints
@@ -101,7 +100,8 @@ toco-madera/
 │       │   ├── admin_material_routes.py
 │       │   ├── admin_compra_routes.py
 │       │   ├── admin_inventario_routes.py
-│       │   └── admin_receta_routes.py
+│       │   ├── admin_receta_routes.py
+│       │   └── cliente_pedido_routes.py
 │       └── utils/
 │           └── permisos.py            # @admin_required
 └── frontend/
@@ -116,7 +116,10 @@ toco-madera/
             │   ├── login/              # login.ts, login.html, login.css
             │   └── registro/           # registro.ts, registro.html, registro.css
             ├── cliente/
-            │   └── inicio/             # inicio.ts, inicio.html, inicio.css
+            │   ├── inicio/             # inicio.ts, inicio.html, inicio.css
+            │   ├── carrito/            # carrito.ts, carrito.html, carrito.css
+            │   ├── checkout/           # checkout.ts, checkout.html, checkout.css
+            │   └── mis-pedidos/        # mis-pedidos.ts/html/css
             ├── core/
             │   ├── guards/admin.guard.ts
             │   ├── interceptors/auth.interceptor.ts
@@ -128,7 +131,11 @@ toco-madera/
             │       ├── admin-materiales.ts
 │       ├── admin-compras.ts
 │       ├── admin-inventario.ts
-│       └── admin-recetas.ts
+│       ├── admin-recetas.ts
+│       ├── carrito.ts
+│       ├── catalogo-carrito.ts
+│       ├── cliente-pedidos.ts
+│       └── metodos-pago-demo.ts
             └── admin/
                 ├── dashboard/          # dashboard.ts, dashboard.html, dashboard.css
                 ├── productos/          # productos.ts, productos.html, productos.css
@@ -398,6 +405,26 @@ Las recetas usan `recetas` y `receta_materiales`: producto, versión, vigencia, 
 
 Los identificadores de categoría y los SKU del ejemplo deben adaptarse a los datos existentes. El precio se intercambia como cadena decimal para conservar su precisión.
 
+### 8.9. Pedidos y pagos simulados — Etapa 3.18
+
+| Método | Ruta | Rol | Función |
+|---|---|---|---|
+| GET | `/api/v1/cliente/pedidos/` | CLIENTE | Consultar pedidos propios |
+| POST | `/api/v1/cliente/pedidos/` | CLIENTE | Confirmar pedido y pago de prueba |
+| GET | `/api/v1/cliente/pedidos/<id>` | CLIENTE | Ver el detalle de un pedido propio |
+
+El backend valida el rol, obtiene precios reales desde `productos`, almacena cabecera y renglones de `pedidos`/`pedido_detalles` y registra el pago ficticio en `pagos`. La vista `vw_saldos_pedidos` agrega total, pagado y saldo. El frontend gestiona la selección de **anticipo 50 %** o **pago total**. Se admiten **transferencia o tarjeta de demostración**; no se aceptan datos bancarios reales, ni se procesan fondos. La confirmación usa una clave de petición para reducir duplicados; la consistencia final depende de la transacción y la restricción única del folio.
+
+### 8.10. Alta controlada de ADMIN — Etapa 3.18
+
+Crear primero un cliente con una cuenta dedicada y, desde `backend` con permisos de operador del entorno local, ejecutar:
+
+```powershell
+python crear_admin.py --correo "admin@ejemplo.com"
+```
+
+Reemplazar el correo con el de la cuenta real. El comando exige confirmar expresamente la promoción. El registro público no permite seleccionar ADMIN. Cerrar sesión y volver a entrar para refrescar el rol. Esta herramienta no expone un endpoint web.
+
 ## 9. Reglas de negocio principales
 
 1. Una cuenta administrativa debe tener JWT válido, usuario autorizado y rol `ADMIN` para operar endpoints protegidos.
@@ -424,7 +451,7 @@ Los identificadores de categoría y los SKU del ejemplo deben adaptarse a los da
 
 Las reglas de pedidos y anticipos se documentan como **alcance previsto**, no como módulos terminados. La lectura de inventario y recetas sí fue desarrollada en la Etapa 3.17.
 
-## 10. Estado de los módulos al cierre de la Etapa 3.17
+## 10. Estado de los módulos: 3.18 cerrada, 3.19 en inicio
 
 | Módulo o capacidad | Estado al cierre |
 |---|---|
@@ -525,6 +552,14 @@ Antes del CRUD había diez materiales base observados en MySQL, entre ellos pino
 
 Las tablas `consumos_produccion`, `ordenes_produccion`, `lotes_producto` y `reservas_producto` también fueron identificadas en el esquema de la base de datos; **sus flujos funcionales aún no están desarrollados**.
 
+### 10.6. Validación de la Etapa 3.18
+
+- Cliente y administrador se distinguen con `roles` y JWT; el menú muestra acciones según rol.
+- Carrito, login, compra y visualización de pedidos comprobados en pruebas manuales del usuario.
+- `SHOW VIEW` y `SELECT` concedidos a `toco_app@localhost` sobre `vw_saldos_pedidos` y consultas repetidas tras la corrección.
+- Los formularios de pago son **ejemplos simulados** de 16/18 dígitos con almacenamiento del identificador demo, no de los datos bancarios.
+- Diálogo de confirmación de cierre de sesión en tienda y dashboard sin alterar los indicadores ni Chart.js.
+
 ## 11. Pruebas manuales realizadas / a mantener
 
 ### Autenticación y navegación
@@ -533,6 +568,16 @@ Las tablas `consumos_produccion`, `ordenes_produccion`, `lotes_producto` y `rese
 - Iniciar sesión como administrador y entrar al dashboard.
 - Cerrar sesión y comprobar que una ruta administrativa redirige al login.
 - Intentar consultar un endpoint protegido sin JWT y verificar una respuesta de rechazo.
+
+### Compra y pagos ficticios — Etapa 3.18
+
+- Completar el carrito con una cuenta CLIENTE, indicar grabado y confirmar un anticipo del 50 % o pago total.
+- Probar la captura de tarjeta demo de 16 dígitos y CLABE ficticia de 18; rechazar datos no reconocidos.
+- Verificar que la opción «Guardar para próximas compras» solo retiene el ID de un método público de prueba.
+- Abrir «Mis pedidos» con sesión CLIENTE y comprobar HTTP 200; revisar el `saldo` con `vw_saldos_pedidos`.
+- Comprobar que la cuenta ADMIN puede acceder al dashboard y no gestionar pedidos propios como CLIENTE.
+- Confirmar y cancelar logout; el carrito debe conservar los artículos al cerrar sesión.
+- Validar que Flask nunca reciba una tarjeta real o CLABE en el JSON del pedido.
 
 ### Productos
 
@@ -601,9 +646,9 @@ python -c "from app import create_app; app=create_app(); print(app.url_map)"
 ## 12. Seguridad y consideraciones técnicas
 
 - No compartir contraseñas, archivos `.env`, claves JWT ni tokens en el repositorio.
-- Crear administradores únicamente mediante el procedimiento administrativo autorizado (`backend/scripts/crear_admin.py`).
+- Crear administradores únicamente mediante el comando local controlado `backend/crear_admin.py` (no existe alta pública de ADMIN).
 - No confiar en las validaciones de Angular como única protección: Flask debe validar nuevamente todos los campos.
-- La sesión Angular actual mantiene el JWT **en memoria**; al recargar la pestaña puede requerirse iniciar sesión otra vez.
+- La versión integrada de la Etapa 3.18 conserva el JWT y el perfil en `sessionStorage` para permanecer autenticado dentro de la misma pestaña tras una recarga. Se elimina al cerrar sesión y normalmente al cerrar la pestaña. **No equivale a revocación de tokens en el servidor** y exige protegerse frente a XSS.
 - El botón «Cerrar sesión» limpia la sesión local; **no implementa revocación del JWT en el servidor**. La revocación y la gestión robusta de sesiones quedan pendientes para un entorno productivo.
 - Revisar CORS, expiración de tokens, variables de entorno, manejo de errores y auditoría antes de desplegar.
 - El endpoint de dashboard de estado no equivale a que los indicadores de negocio ya estén conectados a consultas estadísticas reales.
@@ -626,113 +671,60 @@ No utilizar `git init`, `git remote rename` ni `git push --force` para la public
 # Desde la raíz del repositorio
 git status
 git add README.md backend frontend
-git commit -m "feat: cerrar etapa 3.17 compras inventario y recetas"
+git commit -m "feat: cerrar etapa 3.18 carrito pedidos pagos simulados y roles"
 git push origin main
 ```
 
 Revisar siempre `git status` y `git diff --cached` antes del commit para asegurar que no se incluyan secretos, archivos temporales ni el entorno virtual.
 
-## 14. Plan de ejecución pendiente — Etapas 3.18 a 3.21
+## 14. Cierre de la Etapa 3.18 y ruta de la Etapa 3.19
 
-Se prioriza una entrega académica integral en el tiempo restante, evitando módulos aislados que no estén conectados a los pedidos y a la producción.
+### 14.1. Etapa 3.18 — Cliente, pedidos y pagos simulados (validada por el equipo)
 
-### 3.18 — Carrito, pedidos de clientes y pagos simulados
+**Flujo de cliente integrado:** catálogo público, login/registro con roles, navegación por sesión, carrito persistido en el navegador, personalización cuando el producto lo permite, checkout, selección de anticipo del 50 % o pago del 100 %, confirmación de pedido y consulta de pedidos propios. La autorización de pedidos corresponde al JWT del cliente; el servidor calcula importes y no confía en precios proporcionados por Angular.
 
-**Orden de ejecución:**
+**Simulación comercial:** únicamente `TARJETA_SIMULADA` y `TRANSFERENCIA_SIMULADA` para pedidos nuevos. El formulario solicita la captura manual de **datos de demostración**: tarjetas públicas de prueba de 16 dígitos o una CLABE ficticia de 18 dígitos. La aplicación rechaza otros números. No se captura CVV, no existe transferencia real, no se cobran fondos y **los números no se envían a Flask ni se guardan en MySQL**. La función «Guardar para próximas compras» conserva solo el identificador del ejemplo público, segregado por ID de cliente en el `localStorage` del navegador. No es un almacén de tarjetas reales ni un procesador PCI DSS.
 
-1. **3.18.1: diagnóstico único de MySQL.** Revisar columnas, restricciones, claves foráneas, estados e índices de tablas de carrito (si existe), pedidos, detalles, pagos, usuarios/clientes, personalización, productos, reservas y entregas. No presuponer nombres de columnas que no estén confirmados.
-2. **3.18.2: contrato de API y reglas de estados.** Definir cuerpos/respuestas JSON, validación server-side, precios del catálogo, límites de grabado y cantidades; criterios para pedido a fabricar o disponible.
-3. **3.18.3: backend transaccional.** Registrar pedido con sus detalles, total y modalidad de pago simulada; evitar manipulación del precio desde Angular; vincular pedido al usuario JWT; verificar disponibilidad con el proceso de reservas que permita el esquema.
-4. **3.18.4: carrito Angular.** Seleccionar productos, cantidades, textos de grabado, editar y quitar artículos; mostrar subtotal y total.
-5. **3.18.5: checkout y simulación de pago.** Pago total o anticipo del **50 %**; registrar importes, estado y saldo pendiente en MySQL. Ninguna integración bancaria real ni almacenamiento de datos de tarjeta.
-6. **3.18.6: historial básico y pruebas.** El cliente consulta sus pedidos; el administrador puede consultarlos y revisar estados; validar cálculos, permisos, errores, persistencia y casos negativos.
-7. **3.18.7: actualización completa del README y commit.** Cerrar la etapa solo después de pruebas manuales de extremo a extremo.
+**Roles y cuentas:** `CLIENTE` por registro público; `ADMIN` por procedimiento controlado en el backend. El comando de prueba es `python crear_admin.py --correo "<correo-existente>"` desde `backend` con `.venv` activo. Solo debe ejecutarlo una persona autorizada con acceso al servidor y la cuenta MySQL. Tras cambiar el rol, cerrar e iniciar sesión de nuevo. No exponer este comando mediante endpoint o UI pública.
 
-**Criterios de aceptación 3.18:** el cliente autenticado puede preparar un carrito con varios artículos, personalizarlos cuando corresponda, confirmar pedido, seleccionar pago simulado de 50 % o 100 %, recibir número de pedido y consultarlo después. El servidor calcula importes, guarda la operación íntegra y rechaza accesos ajenos al pedido.
+**Sesión y navegación:** JWT y perfil persisten dentro de la pestaña mediante `sessionStorage`; el menú público muestra login/registro o identidad y enlaces por rol; confirmaciones de cierre de sesión en tienda y dashboard. El dashboard administrativo conserva las tarjetas KPI y la gráfica semanal Chart.js **con datos provisionales**.
 
-**Reglas mínimas:** el grabado debe respetar `permite_grabado` y `max_caracteres_grabado`; los productos deben estar activos; la misma petición no debe generar cobros duplicados; los pagos son simulaciones contables, no cobros reales; los cambios de estado deben seguir la secuencia permitida por el esquema real.
+**Permisos MySQL de la vista:** el error 1142 de SQLAlchemy al reflejar `vw_saldos_pedidos` se diagnosticó. El usuario de aplicación `toco_app@localhost` recibió permisos `SELECT` y `SHOW VIEW` sobre la vista; el equipo confirmó las pruebas funcionales posteriores. Nunca asignar `ALL PRIVILEGES` globales por esta causa.
 
-### 3.19 — Producción, consumos, lotes, reservas y entregas
+**API utilizada:**
 
-- Crear órdenes de producción vinculadas a pedidos y versiones concretas de recetas.
-- Calcular materiales requeridos multiplicando la receta por la cantidad de productos.
-- Validar existencias con transacciones para impedir consumos simultáneos excesivos.
-- Registrar consumos negativos de materias primas y lotes/productos terminados según el esquema.
-- Gestionar reservas de producto, entrega y saldo final de pedidos con anticipo.
+| Método | Ruta | Rol | Propósito |
+|---|---|---|---|
+| GET | `/api/v1/productos/` | Público | Catálogo activo |
+| POST | `/api/v1/cliente/pedidos/` | CLIENTE | Crear pedido y registrar pago simulado |
+| GET | `/api/v1/cliente/pedidos/` | CLIENTE | Listar pedidos propios |
+| GET | `/api/v1/cliente/pedidos/<id>` | CLIENTE | Consultar detalle propio |
 
-### 3.20 — Integración de cliente y administrador
+**Pruebas confirmadas en conversación:** navegación, login y persistencia de sesión, carrito, checkout de tarjeta/transferencia ficticias, guardado de métodos demo, cierre de sesión, roles y consulta de pedidos. La compilación y resultados de cada estación dependen del repositorio local del equipo. No afirmar que exista una pasarela de pago real, tokenización bancaria o un despliegue productivo.
 
-- Unificar seguimiento, historial de pedidos, posibles reseñas previstas en el alcance y panel administrativo.
-- Reemplazar los datos de muestra de Chart.js por indicadores reales de compras, pedidos, producción y ventas desde Flask/MySQL.
-- Corregir inconsistencias visuales, navegación y mensajes de error.
+### 14.2. Etapa 3.19 — Producción y entregas (en inicio)
 
-### 3.21 — PWA, pruebas y entrega
+**3.19.1 Diagnóstico y contrato:** obtener estructura *vigente* de `ordenes_produccion`, `consumos_produccion`, `movimientos_material`, `movimientos_producto`, `lotes_producto`, `reservas_producto`, `entregas`, recetas y existencias; revisar llaves, vistas e índices. Usar `docs/sql/diagnostico_etapa_3_19.sql` del paquete de inicio. **No ejecutar DDL sobre la base ni sustituir el esquema vigente por `schema.sql` de diseño**, ya que sus definiciones antiguas de entregas difieren del esquema reportado por MySQL.
 
-- Revisar manifest, service worker, iconos, instalabilidad y alcance offline compatible con seguridad.
-- Probar registro/login, carrito, pago simulado, compra, inventario, receta, producción y entrega de extremo a extremo.
-- Comprobar build de Angular, importación Flask, CORS, JWT, accesos administrativos, secretos y estado Git.
-- Preparar el README general actualizado y el paquete de entrega académica.
+**3.19.2 Backend de producción:** endpoints ADMIN para listar, planificar, iniciar y finalizar órdenes vinculadas a `pedido_detalles` y a una `receta` versionada; estados reales `PLANIFICADA`, `EN_PROCESO`, `FINALIZADA`, `CANCELADA` sujetos a transiciones válidas.
 
-### 14.1. Diagnóstico SQL único al comenzar 3.18
+**3.19.3 Consumo atómico:** calcular `receta_materiales.cantidad × ordenes_produccion.cantidad`, comprobar existencias y bloquear filas cuando el esquema lo permita, escribir `consumos_produccion` y `movimientos_material` negativos con `tipo='CONSUMO'` dentro de una única transacción; nunca descontar dos veces una orden finalizada o iniciada.
 
-Ejecutar **solo en MySQL Workbench**. Las consultas son de lectura y están diseñadas para descubrir las tablas reales antes de implementar pedidos y pagos.
+**3.19.4 Producto terminado:** finalizar órdenes, registrar lotes y `movimientos_producto` de producción; atender cantidades de `tipo_surtido='FABRICACION'` y reservas de unidades en existencia cuando estén respaldadas por las tablas reales.
 
-```sql
-USE toco_madera;
+**3.19.5 Entregas y saldo:** programar o concluir entregas mediante `entregas`, verificar `vw_saldos_pedidos.saldo`, gestionar únicamente pagos simulados de liquidación y cambiar pedidos a `LISTO`/`ENTREGADO` solo después de las validaciones de negocio. No marcar entregado si quedan requisitos pendientes.
 
--- A. Identificar tablas comerciales relacionadas.
-SELECT TABLE_NAME
-FROM information_schema.TABLES
-WHERE TABLE_SCHEMA = 'toco_madera'
-  AND (
-    TABLE_NAME LIKE '%pedido%' OR
-    TABLE_NAME LIKE '%pago%' OR
-    TABLE_NAME LIKE '%carrito%' OR
-    TABLE_NAME LIKE '%reserva%' OR
-    TABLE_NAME LIKE '%entrega%' OR
-    TABLE_NAME LIKE '%personaliza%' OR
-    TABLE_NAME LIKE '%cliente%' OR
-    TABLE_NAME IN ('productos', 'usuarios', 'roles', 'lotes_producto')
-  )
-ORDER BY TABLE_NAME;
+**3.19.6 Angular y pruebas:** interfaz administrativa para órdenes y entregas, prueba con pedidos reales de la Etapa 3.18, reconstrucción de existencias y validación de rollback e idempotencia.
 
--- B. Columnas y tipos de las tablas relevantes.
-SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE,
-       IS_NULLABLE, COLUMN_KEY, COLUMN_DEFAULT, EXTRA
-FROM information_schema.COLUMNS
-WHERE TABLE_SCHEMA = 'toco_madera'
-  AND (
-    TABLE_NAME LIKE '%pedido%' OR
-    TABLE_NAME LIKE '%pago%' OR
-    TABLE_NAME LIKE '%carrito%' OR
-    TABLE_NAME LIKE '%reserva%' OR
-    TABLE_NAME LIKE '%entrega%' OR
-    TABLE_NAME LIKE '%personaliza%' OR
-    TABLE_NAME LIKE '%cliente%' OR
-    TABLE_NAME IN ('productos', 'usuarios', 'roles', 'lotes_producto')
-  )
-ORDER BY TABLE_NAME, ORDINAL_POSITION;
+**Regla de integridad:** el estado del pedido, el estado de la orden, los movimientos de material, los lotes, las reservas, las entregas y los saldos no son intercambiables. Ninguna operación debe considerar un pago simulado como prueba de entrega física.
 
--- C. Relaciones entre las tablas localizadas.
-SELECT TABLE_NAME, COLUMN_NAME,
-       REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-FROM information_schema.KEY_COLUMN_USAGE
-WHERE TABLE_SCHEMA = 'toco_madera'
-  AND REFERENCED_TABLE_NAME IS NOT NULL
-  AND (
-    TABLE_NAME LIKE '%pedido%' OR
-    TABLE_NAME LIKE '%pago%' OR
-    TABLE_NAME LIKE '%carrito%' OR
-    TABLE_NAME LIKE '%reserva%' OR
-    TABLE_NAME LIKE '%entrega%' OR
-    TABLE_NAME LIKE '%personaliza%' OR
-    TABLE_NAME LIKE '%cliente%' OR
-    TABLE_NAME IN ('productos', 'usuarios', 'lotes_producto')
-  )
-ORDER BY TABLE_NAME, COLUMN_NAME;
-```
+### 14.3. Etapa 3.20 — Integración y estadísticas reales
 
-Los tres resultados se pueden exportar como CSV. Se evita solicitar de nuevo la información estructural de compras, inventario y recetas ya verificada en la Etapa 3.17.
+Consolidar flujo de cliente y administrador y sustituir los ceros provisionales de KPI/Chart.js por estadísticas provenientes de consultas reales de Flask y MySQL. Conservar permisos, navegación y roles.
+
+### 14.4. Etapa 3.21 — PWA, pruebas y entrega
+
+Verificar `manifest`, service worker, instalación, rutas offline seguras, iconos, `ng build`, permisos, JWT, operaciones transaccionales e instrucciones de puesta en marcha. Cerrar el README completo y entregar el proyecto académico.
 
 ## 15. Historial de hitos
 
@@ -743,7 +735,9 @@ Los tres resultados se pueden exportar como CSV. Se evita solicitar de nuevo la 
 | **3.15** | **CRUD administrativo de productos: consulta, categorías, alta, edición, búsqueda, filtros y cambio de estado; validación funcional completada** |
 | **3.16** | **Proveedores y materias primas: CRUD protegido, formularios Angular, unidad de medida, validaciones de stock mínimo y diez pruebas confirmadas del módulo materiales** |
 | **3.17** | **Compras y recepción, existencias y movimientos, recetas versionadas: desarrollo y pruebas manuales confirmadas** |
-| 3.18–3.21 | Pendientes: pedidos/pagos, producción/entrega, integración y entrega PWA |
+| **3.18** | **Catálogo, carrito, checkout, pedidos, pagos ficticios (transferencia/tarjeta), métodos demo guardados, roles y confirmaciones de logout: pruebas del usuario completadas** |
+| **3.19** | **Iniciada: diagnóstico de esquema productivo, luego órdenes, consumo, lotes, entregas y saldo** |
+| 3.20–3.21 | Pendientes: estadísticas reales, integración, PWA y entrega |
 
 ---
 
@@ -751,4 +745,4 @@ Los tres resultados se pueden exportar como CSV. Se evita solicitar de nuevo la 
 
 **Proyecto académico — Toco Madera, León, Guanajuato, México.**
 
-**Actualización documental:** 19 de noviembre de 2026 — cierre de la **Etapa 3.17** y preparación de la **3.18**.
+**Actualización documental:** 20 de noviembre de 2026 — cierre funcional de la **Etapa 3.18** e inicio del diagnóstico de la **Etapa 3.19**.

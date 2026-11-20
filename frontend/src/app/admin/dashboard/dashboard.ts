@@ -216,15 +216,41 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   // 9. CERRAR SESIÓN
   // ====================================================
 
+  // ====================================================
+  // 9. CERRAR SESIÓN CON CONFIRMACIÓN
+  // ====================================================
+
+  /**
+   * TOCO MADERA - DASHBOARD ADMINISTRATIVO
+   *
+   * Solicita confirmación antes de cerrar sesión.
+   *
+   * FUNCIONAMIENTO:
+   * 1. Muestra una ventana de confirmación.
+   * 2. Si selecciona Cancelar, conserva la sesión.
+   * 3. Si selecciona Aceptar, elimina el JWT.
+   * 4. Limpia los datos del administrador.
+   * 5. Redirige a la pantalla de login.
+   *
+   * No modifica los indicadores, las gráficas
+   * ni las conexiones existentes con Flask.
+   */
   cerrarSesion(): void {
-    // Eliminar el token JWT de la memoria.
+    // Solicitar confirmación al administrador.
+    const confirmado = window.confirm(
+      '¿Estás seguro de que quieres cerrar sesión como administrador?',
+    );
+
+    // Si selecciona Cancelar, permanecer conectado.
+    if (!confirmado) {
+      return;
+    }
+
+    // Cerrar sesión mediante el servicio Auth.
+    // Elimina el token JWT y los datos del usuario.
     this.auth.cerrarSesion();
 
-    // Eliminar los datos del usuario autenticado.
-    //
-    // Esto se realiza dentro del servicio Auth.
-
-    // Redirigir a la pantalla de login.
+    // Regresar al formulario de inicio de sesión.
     this.router.navigateByUrl('/login');
   }
 
