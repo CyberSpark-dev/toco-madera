@@ -18,7 +18,7 @@ import { imagenProducto } from '../../core/utils/imagenes-productos';
   styleUrl: './carrito.css',
 })
 export class CarritoCliente implements OnInit {
-  readonly imagenProducto = imagenProducto;
+  readonly imagenProducto = imagenProducto;// Función para obtener la imagen de un producto.
   readonly carrito = inject(CarritoService);
   private readonly catalogoApi = inject(CatalogoCarritoService);
 
