@@ -1,9 +1,14 @@
 /**
- * Toco Madera | Etapa 3.18.4
- * Carrito persistente local: guarda exclusivamente artículos, sin JWT ni datos bancarios.
- * Los precios del navegador son orientativos; Flask los recalcula en checkout.
+ * TOCO MADERA - Carrito independiente por cliente (corrección multiusuario).
+ *
+ * - Cada cliente autenticado utiliza tm_carrito_usuario_<id>_v1.
+ * - Sin sesión CLIENTE, el carrito visible está vacío y no se permite agregar.
+ * - Los artículos se mantienen en este navegador entre sesiones del MISMO cliente.
+ * - No se copian los artículos del antiguo carrito global porque se desconoce su dueño.
+ * - JWT y contraseñas nunca se guardan aquí. Flask valida productos, precios y stock.
  */
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Auth } from './auth';
 
 export interface ProductoCatalogo {
   id_producto: number;
@@ -44,16 +49,39 @@ interface EstadoGuardado {
 
 @Injectable({ providedIn: 'root' })
 export class CarritoService {
-  private readonly storageKey = 'tm_carrito_v1';
-  private readonly estado = signal<EstadoGuardado>(this.restaurar());
+  private readonly auth = inject(Auth);
+  private readonly estados = new Map<number, EstadoGuardado>();
+  private readonly revision = signal(0);
+  private readonly vacioInterno = this.nuevoEstado();
 
-  readonly items = computed(() => this.estado().items);
+  /** Reactivo: al cambiar Auth.usuario / Auth.esCliente cambia el carrito visible. */
+  readonly idClienteActual = computed<number | null>(() => {
+    if (!this.auth.esCliente()) return null;
+    const id = this.auth.usuario()?.id_usuario;
+    return Number.isSafeInteger(id) && id! > 0 ? id! : null;
+  });
+
+  private readonly estadoActivo = computed(() => {
+    this.revision();
+    const id = this.idClienteActual();
+    return id === null ? this.vacioInterno : this.cargarUsuario(id);
+  });
+
+  readonly items = computed(() => this.estadoActivo().items);
   readonly cantidadTotal = computed(() => this.items().reduce((a, i) => a + i.cantidad, 0));
   readonly subtotalEstimado = computed(() => this.items().reduce((a, i) => a + Number(i.precio_estimado) * i.cantidad, 0));
-  readonly claveSolicitud = computed(() => this.estado().clave_solicitud);
+  readonly claveSolicitud = computed(() => this.estadoActivo().clave_solicitud);
   readonly vacio = computed(() => this.items().length === 0);
 
+  constructor() {
+    // El formato anterior era común a todos los usuarios. No se puede atribuir con seguridad.
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('tm_carrito_v1');
+    } catch { /* El carrito aislado sigue disponible en memoria. */ }
+  }
+
   agregar(producto: ProductoCatalogo, cantidad: number, texto = '', notas = ''): void {
+    this.exigirCliente();
     if (producto.activo !== undefined && !Boolean(producto.activo)) {
       throw new Error('El producto no está disponible.');
     }
@@ -75,7 +103,8 @@ export class CarritoService {
       throw new Error('El grabado supera el límite de caracteres.');
     }
     if (observaciones.length > 200) throw new Error('Las notas admiten máximo 200 caracteres.');
-    const actual = this.estado();
+
+    const actual = this.estadoActivo();
     const items = actual.items.map(i => ({ ...i }));
     const existente = items.find(i => i.id_producto === producto.id_producto &&
       (i.texto_grabado ?? '') === grabado && (i.notas ?? '') === observaciones);
@@ -98,6 +127,7 @@ export class CarritoService {
   }
 
   cambiarCantidad(idLinea: string, cantidad: number): void {
+    this.exigirCliente();
     if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > 100) {
       throw new Error('La cantidad debe estar entre 1 y 100.');
     }
@@ -106,52 +136,86 @@ export class CarritoService {
   }
 
   quitar(idLinea: string): void {
+    this.exigirCliente();
     this.actualizar(this.items().filter(i => i.id_linea !== idLinea));
   }
 
-  vaciar(): void { this.actualizar([]); }
+  vaciar(): void {
+    this.exigirCliente();
+    this.actualizar([]);
+  }
+
+  /** Checkout asíncrono: borra SOLO el carrito del cliente que realizó la compra. */
+  vaciarDeUsuario(idUsuario: number): void {
+    if (!Number.isSafeInteger(idUsuario) || idUsuario < 1) return;
+    this.guardarUsuario(idUsuario, this.nuevoEstado());
+  }
 
   datosCheckout(): ItemCheckout[] {
+    this.exigirCliente();
     return this.items().map(i => ({
       id_producto: i.id_producto, cantidad: i.cantidad,
       texto_grabado: i.texto_grabado, notas: i.notas
     }));
   }
 
+  private exigirCliente(): number {
+    const id = this.idClienteActual();
+    if (id === null) throw new Error('Inicia sesión con una cuenta CLIENTE para utilizar tu carrito personal.');
+    return id;
+  }
+
   private actualizar(items: ItemCarrito[]): void {
-    // Cualquier cambio lógico en el carrito inicia un nuevo checkout.
-    const nuevo: EstadoGuardado = { version: 1, clave_solicitud: crypto.randomUUID(), items };
-    this.estado.set(nuevo);
-    this.persistir(nuevo);
+    const id = this.exigirCliente();
+    // Cada modificación genera nueva clave de solicitud para el checkout.
+    this.guardarUsuario(id, { version: 1, clave_solicitud: crypto.randomUUID(), items });
   }
 
-  private restaurar(): EstadoGuardado {
-    const nuevo = (): EstadoGuardado => ({ version: 1, clave_solicitud: crypto.randomUUID(), items: [] });
-    if (typeof localStorage === 'undefined') return nuevo();
+  private guardarUsuario(id: number, valor: EstadoGuardado): void {
+    this.estados.set(id, valor);
     try {
-      const raw = localStorage.getItem(this.storageKey);
-      if (!raw) return nuevo();
-      const dato: unknown = JSON.parse(raw);
-      if (!dato || typeof dato !== 'object') return nuevo();
-      const s = dato as Partial<EstadoGuardado>;
-      if (s.version !== 1 || !Array.isArray(s.items) || s.items.length > 50 ||
-          typeof s.clave_solicitud !== 'string' || !/^[0-9a-f-]{36}$/i.test(s.clave_solicitud)) return nuevo();
-      const items = s.items.filter(i =>
-        i && typeof i.id_linea === 'string' && Number.isInteger(i.id_producto) &&
-        i.id_producto > 0 && typeof i.nombre === 'string' &&
-        Number.isInteger(i.cantidad) && i.cantidad >= 1 && i.cantidad <= 100 &&
-        Number.isFinite(Number(i.precio_estimado)) && Number(i.precio_estimado) > 0 &&
-        typeof i.sku === 'string' &&
-        (i.texto_grabado === null || typeof i.texto_grabado === 'string') &&
-        (i.notas === null || typeof i.notas === 'string')
-      );
-      return { version: 1, clave_solicitud: s.clave_solicitud, items };
-    } catch { return nuevo(); }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(this.claveUsuario(id), JSON.stringify(valor));
+      }
+    } catch { /* Si está restringido, continúa en memoria. */ }
+    this.revision.update(n => n + 1);
   }
 
-  private persistir(valor: EstadoGuardado): void {
-    if (typeof localStorage === 'undefined') return;
-    try { localStorage.setItem(this.storageKey, JSON.stringify(valor)); }
-    catch { /* Sin espacio: el carrito continúa en memoria. */ }
+  private cargarUsuario(id: number): EstadoGuardado {
+    const enMemoria = this.estados.get(id);
+    if (enMemoria) return enMemoria;
+    let valor = this.nuevoEstado();
+    try {
+      const raw = typeof localStorage === 'undefined' ? null : localStorage.getItem(this.claveUsuario(id));
+      if (raw) {
+        const dato: unknown = JSON.parse(raw);
+        if (dato && typeof dato === 'object') {
+          const s = dato as Partial<EstadoGuardado>;
+          if (s.version === 1 && Array.isArray(s.items) && s.items.length <= 50 &&
+              typeof s.clave_solicitud === 'string' && /^[0-9a-f-]{36}$/i.test(s.clave_solicitud)) {
+            const items = s.items.filter(i =>
+              i && typeof i.id_linea === 'string' && Number.isInteger(i.id_producto) &&
+              i.id_producto > 0 && typeof i.nombre === 'string' &&
+              Number.isInteger(i.cantidad) && i.cantidad >= 1 && i.cantidad <= 100 &&
+              Number.isFinite(Number(i.precio_estimado)) && Number(i.precio_estimado) > 0 &&
+              typeof i.sku === 'string' &&
+              (i.texto_grabado === null || typeof i.texto_grabado === 'string') &&
+              (i.notas === null || typeof i.notas === 'string')
+            );
+            valor = { version: 1, clave_solicitud: s.clave_solicitud, items };
+          }
+        }
+      }
+    } catch { /* Datos locales corruptos: empezar carrito limpio. */ }
+    this.estados.set(id, valor);
+    return valor;
+  }
+
+  private claveUsuario(id: number): string {
+    return `tm_carrito_usuario_${id}_v1`;
+  }
+
+  private nuevoEstado(): EstadoGuardado {
+    return { version: 1, clave_solicitud: crypto.randomUUID(), items: [] };
   }
 }

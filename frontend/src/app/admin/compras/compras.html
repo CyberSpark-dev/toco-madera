@@ -375,7 +375,8 @@
               <div>
                 <h4 class="text-lg font-bold text-nogal">Materias primas</h4>
                 <p class="mt-1 text-sm text-gray-500">
-                  {{ formulario.detalles.length }} material(es) en esta compra. Puedes agregar más al final de la lista.
+                  {{ formulario.detalles.length }} material(es) en esta compra. Puedes agregar más
+                  al final de la lista.
                 </p>
               </div>
 
@@ -467,11 +468,15 @@
                       Sin precio base
                     }
                   </p>
-                  <button type="button"
+                  <button
+                    type="button"
                     (click)="guardarCostoBase(detalle)"
                     [disabled]="guardando() || guardandoCostoBase() || !detalle.id_material"
-                    class="mt-2 rounded-md border border-terracota px-2 py-1 text-xs font-semibold text-terracota hover:bg-crema disabled:opacity-50">
-                    {{ guardandoCostoBase() ? 'Guardando precio...' : 'Guardar este precio como base' }}
+                    class="mt-2 rounded-md border border-terracota px-2 py-1 text-xs font-semibold text-terracota hover:bg-crema disabled:opacity-50"
+                  >
+                    {{
+                      guardandoCostoBase() ? 'Guardando precio...' : 'Guardar este precio como base'
+                    }}
                   </button>
                 </div>
 
@@ -494,7 +499,9 @@
                  para incorporar otro material.
                  Se reutiliza agregarDetalle() y no modifica costos.
             =================================================== -->
-            <div class="mt-2 flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#D6BBA1] bg-[#FFF9F2] px-4 py-5 text-center">
+            <div
+              class="mt-2 flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#D6BBA1] bg-[#FFF9F2] px-4 py-5 text-center"
+            >
               <p class="text-sm text-gray-600">
                 ¿Necesitas registrar otra materia prima en esta compra?
               </p>
@@ -509,7 +516,8 @@
                 Agregar otro material
               </button>
               <p class="text-xs text-gray-500">
-                Agregados: {{ formulario.detalles.length }} · Los costos de los demás materiales se conservan.
+                Agregados: {{ formulario.detalles.length }} · Los costos de los demás materiales se
+                conservan.
               </p>
             </div>
           </div>

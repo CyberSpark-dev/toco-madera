@@ -378,6 +378,33 @@ def create_app():
     app.register_blueprint(admin_costos_materiales_bp)
 
 
+    # ======================================================
+    # ETAPA 3.19.4 - PRODUCTOS TERMINADOS
+    # ======================================================
+
+    from app.routes.admin_producto_terminado_routes import (
+        admin_producto_terminado_bp
+    )
+
+    # Registrar las rutas para finalizar fabricación.
+    app.register_blueprint(admin_producto_terminado_bp)
+
+
+# ==============================================
+# ETAPA 3.19.5 - ENTREGAS Y SEGUIMIENTO
+# ==============================================
+
+    from app.routes.admin_entregas_routes import (
+        admin_entregas_bp,
+        cliente_seguimiento_bp
+    )
+
+    app.register_blueprint(admin_entregas_bp)
+    app.register_blueprint(cliente_seguimiento_bp)
+
+
+
+
 
 
 

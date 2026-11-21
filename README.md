@@ -4,13 +4,13 @@
 
 **Toco Madera** es una aplicación web progresiva (PWA) académica orientada a una empresa de transformación artesanal de madera en León, Guanajuato, México. Permite ofrecer productos de madera personalizables a clientes y centralizar, mediante un panel protegido, las operaciones administrativas del negocio.
 
-**Estado de desarrollo (20 de noviembre de 2026):** Etapa **3.18 cerrada funcionalmente**, según las pruebas manuales confirmadas por el desarrollador. El catálogo, carrito, pedidos, pagos simulados, roles y gestión administrativa de las etapas anteriores están integrados. **La Etapa 3.19 todavía no forma parte de este corte de documentación.** La aplicación sigue siendo un proyecto académico en desarrollo y no está lista para procesamiento de pagos reales ni despliegue productivo.
+**Estado de desarrollo (20 de noviembre de 2026):** etapas **3.18, 3.19.2, 3.19.3, 3.19.4 y 3.19.6** probadas manualmente en las funciones descritas abajo. La programación y el estado LISTO de la **3.19.5** funcionan; **la liquidación del saldo y la entrega final siguen pendientes de ejecución/verificación**. La corrección del carrito independiente por usuario fue validada. El dashboard con estadísticas reales y la validación final de instalación PWA siguen pendientes. Proyecto académico: sin pagos bancarios reales ni despliegue productivo.
 
 ## 1. Objetivo y alcance
 
 El sistema modela la compra de materias primas, su transformación en artículos de madera y su venta al cliente. Incluye una interfaz pública y una interfaz administrativa. El proyecto está desarrollado por un equipo de cuatro integrantes, con una planificación académica de diez días de implementación y pruebas.
 
-La plataforma integra catálogo, registro e inicio de sesión, personalización por grabado, carrito, pedidos, pagos de demostración, proveedores, compras, materiales, inventario y recetas versionadas. **La ejecución de producción, los movimientos de producto terminado y las entregas todavía no están desarrollados en este corte:** consulta la sección «Estado de los módulos».
+La plataforma integra catálogo, registro e inicio de sesión, personalización por grabado, carrito, pedidos, pagos de demostración, proveedores, compras, materiales, inventario y recetas versionadas. **La producción, el consumo transaccional, los lotes terminados y la programación de recolección ya tienen implementación y pruebas manuales; la entrega final aún no se ha validado.** Consulta la sección «Estado de los módulos» y la sección 16.
 
 ### Productos iniciales
 
@@ -75,7 +75,7 @@ MySQL 8
 
 ## 5. Estructura principal del proyecto
 
-Esta estructura reúne las rutas y componentes **desarrollados hasta la Etapa 3.18**. Es una referencia de los archivos trabajados; el repositorio puede contener otros módulos, modelos, archivos SQL y recursos.
+Esta estructura parte de las rutas y componentes documentados hasta la Etapa 3.18; los componentes adicionales de la Etapa 3.19 se indican en la sección 16. Es una referencia de los archivos trabajados; el repositorio puede contener otros módulos, modelos, archivos SQL y recursos.
 
 ```text
 toco-madera/
@@ -250,7 +250,7 @@ El frontend se ha probado localmente en `http://localhost:4200`.
 
 El guard `adminGuard` protege la navegación hacia `/admin/dashboard`, `/admin/productos`, `/admin/proveedores`, `/admin/materiales`, `/admin/compras`, `/admin/inventario` y `/admin/recetas`. La API aplica una comprobación adicional del rol en el servidor. Las páginas de carrito son públicas, mientras que el checkout y el historial requieren una cuenta CLIENTE.
 
-## 8. Endpoints REST al cierre de la Etapa 3.18
+## 8. Endpoints REST (base 3.18; incorporaciones 3.19 en la sección 16)
 
 Prefijo local: `http://127.0.0.1:5000/api/v1`
 
@@ -450,11 +450,15 @@ Reemplazar el correo con el de la cuenta real. El comando exige confirmar expres
 17. Las compras inician como `BORRADOR`; solo la recepción genera movimientos de entrada y transición a `RECIBIDA`. Una compra recibida no se recibe ni cancela por segunda vez desde el módulo actual.
 18. El inventario se calcula como `SUM(cantidad_firmada)` por material y se contrasta con `stock_minimo` sin sobrescribir movimientos previos.
 19. Las recetas tienen versiones: solo una versión vigente por producto; nuevas versiones preservan el historial y no descuentan materiales.
-20. Los pedidos y sus pagos simulados están implementados y requieren validaciones y transacciones atómicas. El consumo de materiales en producción, los lotes y las entregas permanecen **pendientes**; deberán contar con controles de stock, transiciones válidas e idempotencia.
+20. Los pedidos y sus pagos simulados están implementados y requieren validaciones y transacciones atómicas. Las órdenes de producción, el consumo de materias primas y la generación de lotes se probaron manualmente; la programación de entregas y el aviso al cliente también. La liquidación y entrega final siguen pendientes de verificación.
+21. El carrito se separa por `id_usuario` en almacenamiento local del mismo navegador, no se comparte entre clientes y no se sincroniza entre dispositivos.
+22. La entrega programada muestra fecha, lugar y estado a través de una API protegida, y el cliente consulta total, pagado y saldo desde el historial de pedidos.
+23. Tiempos orientativos: producto disponible sin grabado, 3 a 6 horas sujeto a horario y stock; personalizado individual, 2 a 3 días hábiles; pedido por volumen (10 o más piezas), 5 a 7 días hábiles sujetos a confirmación. La fecha concreta debe acordarse, no asumirse garantizada.
+24. Recolección en taller o punto acordado: sin cargo; envío urbano local previsto por cotización, no activo en el checkout de esta entrega. Los pagos de la prueba siguen siendo simulados.
 
-Los pedidos y anticipos están desarrollados en la Etapa 3.18. Las reglas de fabricación y entrega siguen siendo alcance futuro. La lectura de inventario y recetas fue desarrollada en la Etapa 3.17.
+El cierre integral del flujo fabricación-entrega está en pruebas. La lectura de inventario y recetas fue desarrollada en la Etapa 3.17.
 
-## 10. Estado de los módulos al cierre de la Etapa 3.18
+## 10. Estado de los módulos (base 3.18 y actualización 3.19)
 
 | Módulo o capacidad | Estado al cierre |
 |---|---|
@@ -470,14 +474,15 @@ Los pedidos y anticipos están desarrollados en la Etapa 3.18. Las reglas de fab
 | CRUD de productos, categorías, búsqueda y filtros | **Etapa 3.15: validada** |
 | CRUD de proveedores, búsqueda y filtros | **Etapa 3.16: implementado; registro comprobado** |
 | CRUD de materias primas y selector de unidades | **Etapa 3.16: diez pruebas funcionales confirmadas** |
-| Carrito, personalización y pago simulado | **Etapa 3.18: integrados y validados manualmente** |
+| Carrito, personalización y pago simulado | **Etapa 3.18: integrados**; segregación del carrito por usuario probada posteriormente |
 | Pedidos e historial del cliente | **Etapa 3.18: integrados y validados manualmente** |
 | Compras, registro de detalles y recepción | **Etapa 3.17: validada manualmente** |
 | Existencias, movimientos y alertas de materiales | **Etapa 3.17: validada manualmente** |
-| Reservas de producto e inventario terminado | Pendiente de integrar con pedidos/producción |
+| Inventario de producto terminado | **Entrada de fabricación probada: lote de la orden 1 y movimiento PRODUCCION +1**; salida por entrega aún pendiente |
 | Recetas, ingredientes y versionado | **Etapa 3.17: diez pruebas confirmadas** |
-| Órdenes de producción y consumos de materiales | Pendiente, Etapa 3.19 |
-| Estadísticas reales desde MySQL | Pendiente |
+| Órdenes de producción y consumos de materiales | **Etapas 3.19.2–3.19.3: pruebas manuales satisfactorias** |
+| Seguimiento de entregas | **Programación, estado LISTO y API cliente validados; entrega final pendiente** |
+| Estadísticas reales desde MySQL | Pendiente; gráficas Chart.js obligatorias |
 | Pruebas automatizadas, auditoría y despliegue | Pendiente |
 
 ### 10.1. Entregables de la Etapa 3.15
@@ -652,7 +657,7 @@ python -c "from app import create_app; app=create_app(); print(app.url_map)"
 - Crear administradores únicamente mediante el comando local controlado `backend/crear_admin.py` (no existe alta pública de ADMIN).
 - No confiar en las validaciones de Angular como única protección: Flask debe validar nuevamente todos los campos.
 - La versión integrada de la Etapa 3.18 conserva el JWT y el perfil en `sessionStorage` para permanecer autenticado dentro de la misma pestaña tras una recarga. Se elimina al cerrar sesión y normalmente al cerrar la pestaña. **No equivale a revocación de tokens en el servidor** y exige protegerse frente a XSS.
-- El botón «Cerrar sesión» limpia la sesión local; **no implementa revocación del JWT en el servidor**. La revocación y la gestión robusta de sesiones quedan pendientes para un entorno productivo.
+- El botón «Cerrar sesión» limpia la sesión local y oculta el carrito de la cuenta anterior, pero **no implementa revocación del JWT en el servidor**. La revocación y la gestión robusta de sesiones quedan pendientes para un entorno productivo.
 - Revisar CORS, expiración de tokens, variables de entorno, manejo de errores y auditoría antes de desplegar.
 - El endpoint de dashboard de estado no equivale a que los indicadores de negocio ya estén conectados a consultas estadísticas reales.
 
@@ -668,14 +673,14 @@ git branch --show-current
 git status
 ```
 
-No utilizar `git init`, `git remote rename` ni `git push --force` para la publicación ordinaria. Antes de registrar una etapa:
+No utilizar `git init`, `git remote rename` ni `git push --force` para la publicación ordinaria. Para integrar la rama `fix/carrito-multiusuario` en `main`, revisar el estado de trabajo, confirmar y publicar la rama, actualizar `main` mediante `git pull --ff-only origin main`, fusionar con `git merge --no-ff fix/carrito-multiusuario`, verificar compilación y finalmente `git push origin main`. Antes de registrar una etapa:
 
 ```powershell
 # Desde la raíz del repositorio
 git status
-git add README.md backend frontend
-git commit -m "feat: cerrar etapa 3.18 carrito pedidos pagos simulados y roles"
-git push origin main
+git add README.md
+git commit -m "docs: actualizar avance verificado etapa 3.19"
+# Integrar cambios funcionales mediante rama y merge revisado; no forzar main.
 ```
 
 Revisar siempre `git status` y `git diff --cached` antes del commit para asegurar que no se incluyan secretos, archivos temporales ni el entorno virtual.
@@ -707,7 +712,7 @@ Revisar siempre `git status` y `git diff --cached` antes del commit para asegura
 
 ### 14.2. Límites del corte documental
 
-Este README refleja exclusivamente el estado funcional **hasta el cierre de la Etapa 3.18**. No incluye como implementado ningún Blueprint de órdenes de producción, consumo transaccional, generación de lotes, entrega ni liquidación de saldos posteriores. Estas áreas permanecen fuera del alcance de la versión aquí documentada.
+El bloque anterior conserva el cierre histórico de la Etapa 3.18. El estado posterior se documenta en la **sección 16**: producción y programación de entregas ya probadas, liquidación y entrega final aún pendientes.
 
 El dashboard mantiene sus KPI y la gráfica semanal Chart.js con **valores provisionales**, no estadísticas integradas desde MySQL. Los pagos son **solo una simulación académica** y no están conectados a una pasarela, banco ni procesador de tarjetas. La persistencia de métodos ficticios en `localStorage` es local al navegador y no corresponde a una billetera bancaria.
 
@@ -728,7 +733,13 @@ El dashboard mantiene sus KPI y la gráfica semanal Chart.js con **valores provi
 | **3.16** | **Proveedores y materias primas: CRUD protegido, formularios Angular, unidad de medida, validaciones de stock mínimo y diez pruebas confirmadas del módulo materiales** |
 | **3.17** | **Compras y recepción, existencias y movimientos, recetas versionadas: desarrollo y pruebas manuales confirmadas** |
 | **3.18** | **Cerrada: catálogo, carrito, checkout, pedidos, pagos ficticios (transferencia/tarjeta), métodos demo guardados, roles y confirmaciones de logout; pruebas manuales del usuario completadas** |
-| 3.19–3.21 | **No incluidas en este README**: producción, entregas, estadísticas reales, pruebas finales y entrega PWA |
+| **3.19.2** | Orden de producción y listado de pendientes, verificados manualmente |
+| **3.19.3** | Consumo transaccional de materiales, stock y control de duplicados, validados |
+| **3.19.4** | Fabricación terminada: lote y movimiento de entrada `PRODUCCION +1` verificados |
+| **3.19.5** | Programación de recolección y estado `LISTO` verificados; liquidación y entrega final pendientes |
+| **3.19.6** | Integración de historial financiero y avisos en Mis pedidos; seis comprobaciones funcionales confirmadas |
+| Corrección transversal | Carrito independiente por usuario; separación y retorno a la cuenta probados |
+| 3.20 y entrega | Gráficas reales, PWA instalable, pruebas integrales y entrega final pendientes |
 
 ---
 
@@ -736,4 +747,68 @@ El dashboard mantiene sus KPI y la gráfica semanal Chart.js con **valores provi
 
 **Proyecto académico — Toco Madera, León, Guanajuato, México.**
 
-**Actualización documental:** 20 de noviembre de 2026 — corte completo del README **exclusivamente hasta la Etapa 3.18**.
+**Actualización documental:** 20 de noviembre de 2026 — estado verificado hasta la Etapa 3.19.6, sin declarar cerrado el proceso de liquidación y entrega final.
+
+
+## 16. Actualización funcional de la Etapa 3.19 (20/11/2026)
+
+> **Estado del corte:** avances de producción, programación y seguimiento validados manualmente. **No se declara cerrada la Etapa 3.19 completa** hasta liquidar el saldo simulado, ejecutar la entrega y comprobar el movimiento negativo de inventario.
+
+### 16.1. Producción y materiales (validado)
+
+- `3.19.2`: consulta de pendientes y órdenes de producción; orden de referencia **1**, ligada a un rodillo personalizado del pedido **5**, iniciada en `EN_PROCESO`.
+- `3.19.3`: verificación de los materiales de receta, compra/recepción de insumos, consumo transaccional e inserción de movimientos negativos de material. El usuario confirmó las pruebas esperadas y el bloqueo de duplicidades.
+- `3.19.4`: registro de lote de producto terminado y movimiento `PRODUCCION` por **+1 unidad**; las consultas de lote y movimiento se validaron en Workbench. La finalización completa debe seguir verificándose al revisar el estado de la orden.
+- Materiales con `costo_base`: campo usado para estimaciones académicas de costeo, independiente del precio de compra histórico. La automatización de margen objetivo (40 %) y aprobación administrativa de precios continúa pendiente.
+
+### 16.2. Entregas y seguimiento (parcialmente validado)
+
+- `3.19.5`: consulta administrativa de cinco pedidos, programación de recolección, punto acordado, cambio de pedido a `LISTO` y aviso por la API del cliente. En las pruebas: pedido **5**, `RECOLECCION`, `PROGRAMADA`, fecha **2026-11-24 16:30:00**, punto **Local La Calzada 202, Col. La Moderna**. Estos datos corresponden a un caso de prueba y no a una certificación de dirección comercial.
+- `3.19.6`: la pantalla **Mis pedidos** combina historial (artículos, pagos, total, pagado y saldo) con seguimiento (fecha, punto y aviso). El usuario confirmó seis verificaciones funcionales, incluida compilación Angular.
+- El pedido 5 conservaba saldo simulado **$165.00 MXN** antes de liquidarlo. No se declara pagado ni entregado todavía.
+- Los plazos son informativos hasta confirmación administrativa: 3–6 h si existe stock listo; 2–3 días hábiles para personalizado individual; 5–7 días hábiles para pedidos de volumen. Las condiciones operativas pueden modificar el compromiso.
+
+### 16.3. Carrito segregado por usuario (validado)
+
+El carrito pasó de una clave global compartida a claves locales por identificador de usuario (por ejemplo `tm_carrito_usuario_3_v1`). Al cerrar sesión, desaparece el carrito visible; al ingresar un cliente diferente, solo se carga su propio carrito; el cliente anterior recupera el suyo en el mismo navegador. El usuario confirmó la corrección. **No hay sincronización del carrito entre dispositivos**; un pedido confirmado sí se conserva en MySQL. No debe utilizarse el carrito del navegador como autoridad sobre stock, precios ni permisos.
+
+### 16.4. Rutas añadidas o validadas
+
+| Método | Endpoint relativo a `/api/v1` | Rol | Estado |
+|---|---|---|---|
+| GET | `/admin/produccion/pendientes` | ADMIN | Validado |
+| GET | `/admin/produccion/<id_orden>/verificar-materiales` | ADMIN | Validado |
+| POST | `/admin/produccion/<id_orden>/consumir-materiales` | ADMIN | Validado |
+| GET | `/admin/producto-terminado/orden/<id_orden>/verificar` | ADMIN | Validado en flujo de prueba |
+| POST | `/admin/producto-terminado/orden/<id_orden>/finalizar` | ADMIN | Lote y movimiento de entrada verificados |
+| GET | `/admin/entregas/pedidos` | ADMIN | Validado |
+| POST | `/admin/entregas/pedido/<id_pedido>/programar` | ADMIN | Validado |
+| POST | `/admin/entregas/pedido/<id_pedido>/listo` | ADMIN | Validado |
+| GET | `/cliente/seguimiento/mis-pedidos` | CLIENTE | Validado |
+| POST | `/admin/entregas/pedido/<id_pedido>/liquidar-saldo` | ADMIN | Implementado; **pendiente de prueba final** |
+| POST | `/admin/entregas/pedido/<id_pedido>/entregar` | ADMIN | Implementado; **pendiente de prueba final** |
+
+Los módulos de esta etapa usan archivos `backend/app/routes/admin_produccion_routes.py`, `admin_producto_terminado_routes.py` y `admin_entregas_routes.py` y las tablas existentes de órdenes, consumos, lotes, movimientos, pedidos, pagos y entregas. La migración incremental de recolección se encuentra en `database/01_punto_recoleccion.sql`. No ejecutar migraciones dos veces ni borrar datos de prueba antes del respaldo.
+
+### 16.5. Evidencias confirmadas
+
+1. Consumo de materiales de la orden de rodillo; movimientos y stock resultante revisados.
+2. Movimiento de producto terminado `PRODUCCION` con cantidad firmada **+1**.
+3. Consulta administrativa de cinco pedidos con estados y saldos simulados.
+4. Pedido 5 en `LISTO`, entrega `PROGRAMADA`, fecha/lugar y `aviso` devueltos al CLIENTE.
+5. Seis comprobaciones de interfaz **Mis pedidos** confirmadas por el desarrollador.
+6. Carrito multiusuario corregido y validado según el desarrollador.
+
+**No realizados o no confirmados al emitir este documento:** liquidación simulada del saldo restante del pedido 5, cierre a `ENTREGADO`, movimiento `ENTREGA -1`, rechazo de doble entrega, gráficas comerciales basadas en MySQL, pruebas integrales PWA y paquete final para evaluación.
+
+### 16.6. Próximo recorrido de demostración
+
+1. Ejecutar MySQL 8, Flask (`backend`) y Angular (`frontend`) localmente desde la misma computadora.
+2. Ingresar con dos cuentas de CLIENTE para demostrar aislamiento y persistencia del carrito.
+3. Completar checkout simulado y mostrar pedido, total, anticipo y saldo en **Mis pedidos**.
+4. Consultar como ADMIN compras, materiales, inventario, recetas y orden de producción.
+5. Mostrar producto terminado, programación de entrega y aviso de recolección.
+6. **Pendiente:** ejecutar y comprobar liquidación simulada del saldo, confirmación de entrega y movimiento negativo de inventario.
+7. **Pendiente:** conectar al menos tres gráficas administrativas a consultas reales MySQL y confirmar estado PWA instalable/servicio de aplicación con compilación de producción.
+
+**Restricciones de la demostración:** se ejecuta como versión web local en la computadora del equipo; la PWA y el backend no se consideran publicados en internet. Todos los importes y cobros de la demostración son simulados.

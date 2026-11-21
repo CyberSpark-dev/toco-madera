@@ -1,40 +1,99 @@
-<!-- Toco Madera | Historial privado, protegido por JWT en Flask. -->
+<!-- Toco Madera | Etapa 3.19.6 - Historial, pagos simulados y entrega privada. -->
 <div class="min-h-screen bg-[#F9E9D5] px-5 py-10 text-[#4B2E1F]">
   <main class="mx-auto max-w-5xl space-y-5">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-3xl font-bold">Mis pedidos</h1>
       <div class="flex gap-3">
         <a routerLink="/cliente/carrito" class="rounded-lg border border-[#A65A2E] px-4 py-2 font-semibold">Catálogo</a>
-        <button type="button" (click)="cargar()" class="rounded-lg bg-[#A65A2E] px-4 py-2 font-bold text-white">Actualizar</button>
+        <button type="button" (click)="cargar()" [disabled]="cargando()"
+          class="rounded-lg bg-[#A65A2E] px-4 py-2 font-bold text-white disabled:opacity-50">Actualizar</button>
       </div>
     </div>
+
+    <p class="text-sm text-[#6B5140]">Los pagos mostrados son simulados y no representan un cobro bancario real.</p>
+
     @if (error()) {
-      <div role="alert" class="rounded-lg border border-red-300 bg-red-50 p-4 text-red-800">{{ error() }}
-        <a routerLink="/login" class="ml-2 font-semibold underline">Ir a login</a>
+      <div role="alert" class="rounded-lg border border-red-300 bg-red-50 p-4 text-red-800">
+        {{ error() }} <a routerLink="/login" class="ml-2 font-semibold underline">Ir a login</a>
       </div>
     }
+    @if (avisoSeguimiento()) {
+      <div role="status" class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900">
+        {{ avisoSeguimiento() }}
+      </div>
+    }
+
     @if (cargando()) {
       <p class="rounded-xl bg-white p-6">Consultando tus pedidos...</p>
     } @else if (pedidos().length === 0 && !error()) {
       <p class="rounded-xl bg-white p-6">Todavía no tienes pedidos registrados.</p>
     } @else {
       @for (pedido of pedidos(); track pedido.id_pedido) {
-        <section class="rounded-xl bg-white p-6 shadow-sm">
+        <section class="rounded-xl bg-white p-6 shadow-sm space-y-4">
           <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 class="text-xl font-bold">{{ pedido.folio }}</h2>
-              <p class="mt-1 text-sm text-gray-600">{{ pedido.fecha }} · {{ pedido.estado }}</p>
-              <p class="text-sm text-gray-600">{{ pedido.modalidad_pago }}</p>
+            <div class="min-w-0 flex-1">
+              <h2 class="break-all text-lg font-bold sm:text-xl">{{ pedido.folio }}</h2>
+              <p class="mt-1 text-sm text-gray-600">{{ fechaVisible(pedido.fecha) }} · {{ pedido.seguimiento?.estado || pedido.estado }}</p>
+              <p class="text-sm text-gray-600">Pago: {{ pedido.modalidad_pago === 'ANTICIPO_50' ? '50 % de anticipo y 50 % contra entrega' : 'Pago total' }}</p>
             </div>
-            @if (pedido.resumen) {
-              <div class="text-right">
-                <p class="font-bold">Total: {{ dinero(pedido.resumen.total) }}</p>
-                <p class="text-sm">Pagado: {{ dinero(pedido.resumen.pagado) }}</p>
-                <p class="text-sm">Saldo: {{ dinero(pedido.resumen.saldo) }}</p>
-              </div>
-            }
+            <span class="rounded-full px-3 py-1 text-sm font-bold"
+              [class.bg-green-100]="(pedido.seguimiento?.estado || pedido.estado) === 'LISTO' || (pedido.seguimiento?.estado || pedido.estado) === 'ENTREGADO'"
+              [class.text-green-900]="(pedido.seguimiento?.estado || pedido.estado) === 'LISTO' || (pedido.seguimiento?.estado || pedido.estado) === 'ENTREGADO'"
+              [class.bg-amber-100]="(pedido.seguimiento?.estado || pedido.estado) !== 'LISTO' && (pedido.seguimiento?.estado || pedido.estado) !== 'ENTREGADO'"
+              [class.text-amber-900]="(pedido.seguimiento?.estado || pedido.estado) !== 'LISTO' && (pedido.seguimiento?.estado || pedido.estado) !== 'ENTREGADO'">
+              {{ pedido.seguimiento?.estado || pedido.estado }}
+            </span>
           </div>
-          <details class="mt-4 rounded-lg border border-gray-200 p-3">
+
+          <!-- Fuente financiera: /api/v1/cliente/pedidos/ -->
+          @if (pedido.resumen) {
+            <div class="grid gap-3 sm:grid-cols-3" aria-label="Resumen financiero del pedido">
+              <div class="rounded-lg bg-[#FFF9F2] p-4">
+                <p class="text-sm text-gray-600">Total del pedido</p>
+                <p class="text-xl font-bold">{{ dinero(pedido.resumen.total) }}</p>
+              </div>
+              <div class="rounded-lg bg-[#FFF9F2] p-4">
+                <p class="text-sm text-gray-600">Pagado (simulado)</p>
+                <p class="text-xl font-bold text-green-800">{{ dinero(pedido.resumen.pagado) }}</p>
+              </div>
+              <div class="rounded-lg border p-4" [class.border-orange-300]="saldoPendiente(pedido)"
+                   [class.bg-orange-50]="saldoPendiente(pedido)"
+                   [class.border-green-300]="!saldoPendiente(pedido)"
+                   [class.bg-green-50]="!saldoPendiente(pedido)">
+                <p class="text-sm">{{ saldoPendiente(pedido) ? 'Saldo por pagar' : 'Saldo pendiente' }}</p>
+                <p class="text-xl font-bold" [class.text-orange-900]="saldoPendiente(pedido)"
+                  [class.text-green-800]="!saldoPendiente(pedido)">{{ dinero(pedido.resumen.saldo) }}</p>
+                <p class="text-xs">{{ saldoPendiente(pedido) ? 'Liquidación simulada contra entrega' : 'Sin saldo pendiente' }}</p>
+              </div>
+            </div>
+          } @else {
+            <p role="status" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+              El resumen financiero no está disponible. Consulta con el taller antes de realizar cualquier pago.
+            </p>
+          }
+
+          <!-- Fuente logística: /api/v1/cliente/seguimiento/mis-pedidos -->
+          @if (pedido.seguimiento; as seguimiento) {
+            <div class="rounded-lg border border-[#E3C6A9] bg-[#FFF9F2] p-4 space-y-2">
+              @if (seguimiento.estado === 'LISTO') {
+                <p role="status" class="font-bold text-green-800">Tu pedido está listo para recoger.</p>
+              }
+              <p class="text-sm">{{ seguimiento.aviso }}</p>
+              <p class="text-sm"><strong>Tipo de entrega:</strong> {{ seguimiento.tipo_entrega === 'RECOLECCION' ? 'Recolección' : seguimiento.tipo_entrega }}</p>
+              @if (seguimiento.estado === 'ENTREGADO') {
+                <p class="text-sm"><strong>Entregado:</strong> {{ fechaVisible(seguimiento.entregada) }}</p>
+              } @else {
+                <p class="text-sm"><strong>Fecha de entrega:</strong> {{ fechaVisible(seguimiento.programada || seguimiento.fecha_entrega_prometida) }}</p>
+                <p class="text-sm"><strong>Lugar de recolección:</strong> {{ seguimiento.punto_recoleccion || 'Pendiente de confirmación del taller' }}</p>
+                <p class="text-sm"><strong>Plazo orientativo:</strong> {{ seguimiento.plazo_orientativo }}</p>
+              }
+            </div>
+          } @else {
+            <p class="text-sm text-gray-600">Información de entrega pendiente de actualización.</p>
+          }
+
+          <!-- Se mantienen intactos el detalle de artículos y los pagos individuales. -->
+          <details class="rounded-lg border border-gray-200 p-3">
             <summary class="cursor-pointer font-semibold text-[#A65A2E]">Ver artículos y pagos</summary>
             <div class="mt-4 space-y-2">
               @for (item of pedido.detalles; track item.id_detalle_pedido) {
