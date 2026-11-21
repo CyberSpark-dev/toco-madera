@@ -225,9 +225,9 @@ La base usada en desarrollo se llama `toco_madera`. Para migrar a otro equipo, p
 - **Tag sugerido:** `v1.0.0` (crearlo solo después de confirmar el push).
 - **Repositorio:** https://github.com/CyberSpark-dev/toco-madera
 
-## Autores
+## Autor
 
-Proyecto académico desarrollado por un equipo de **cuatro integrantes**. Completar en esta sección los nombres de los integrantes antes de la entrega si la institución lo requiere.
+**Angel Torres**
 
 ---
 
