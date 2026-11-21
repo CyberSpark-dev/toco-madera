@@ -22,6 +22,14 @@
       <p class="mt-2 text-gray-700">Selecciona tus productos, cantidades y grabados personalizados.</p>
     </div>
 
+    @if (carrito.idClienteActual() === null) {
+      <div class="rounded-xl border border-[#E8D6BF] bg-white p-4 text-sm" role="status">
+        Para agregar productos y conservar tu carrito personal, primero debes
+        <a routerLink="/login" class="font-bold text-[#A65A2E] underline">iniciar sesión como cliente</a>.
+        Puedes consultar el catálogo sin iniciar sesión.
+      </div>
+    }
+
     @if (mensaje()) {
       <div role="status" class="rounded-xl border border-green-300 bg-green-50 p-4 text-green-900">{{ mensaje() }}</div>
     }
@@ -91,7 +99,10 @@
           </div>
           <div class="md:col-span-2 flex flex-wrap items-center justify-between gap-3">
             <p class="text-lg font-bold">Subtotal estimado: {{ precio(+producto.precio_lista * cantidad) }}</p>
-            <button type="submit" class="rounded-lg bg-[#A65A2E] px-6 py-3 font-bold text-white hover:bg-[#4B2E1F]">Agregar al carrito</button>
+            <button type="submit" [disabled]="carrito.idClienteActual() === null"
+            class="rounded-lg bg-[#A65A2E] px-6 py-3 font-bold text-white hover:bg-[#4B2E1F] disabled:cursor-not-allowed disabled:opacity-50">
+            Agregar al carrito
+          </button>
           </div>
         </form>
       </section>
@@ -106,7 +117,13 @@
       </div>
 
       @if (carrito.vacio()) {
-        <p class="mt-5 text-gray-600">Tu carrito está vacío. Selecciona un producto del catálogo.</p>
+        <p class="mt-5 text-gray-600">
+          @if (carrito.idClienteActual() === null) {
+            Inicia sesión para consultar tu carrito personal.
+          } @else {
+            Tu carrito está vacío. Selecciona un producto del catálogo.
+          }
+        </p>
       } @else {
         <div class="mt-5 space-y-4">
           @for (item of carrito.items(); track item.id_linea) {

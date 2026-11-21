@@ -147,6 +147,14 @@ export class CheckoutCliente implements OnInit {
       this.error.set('Las observaciones admiten máximo 500 caracteres.'); return;
     }
 
+    // Capturar el propietario ANTES de enviar la solicitud asíncrona.
+    // Si otra cuenta inicia sesión mientras Flask responde, no se vacía su carrito.
+    const idClienteCheckout = this.carrito.idClienteActual();
+    if (idClienteCheckout === null) {
+      this.error.set('Inicia sesión con una cuenta cliente para confirmar el pedido.');
+      return;
+    }
+
     this.procesando.set(true);
     // No se envía ningún número de tarjeta o CLABE a Flask.
     this.api.confirmar({
@@ -162,7 +170,7 @@ export class CheckoutCliente implements OnInit {
         }
         this.numeroCapturado.set('');
         this.confirmado.set(respuesta.pedido);
-        this.carrito.vaciar();
+        this.carrito.vaciarDeUsuario(idClienteCheckout);
         this.procesando.set(false);
       },
       error: (e: HttpErrorResponse) => {
