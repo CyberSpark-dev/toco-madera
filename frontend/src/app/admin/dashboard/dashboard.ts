@@ -42,7 +42,7 @@ import { CurrencyPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 
 // Tipado de errores HTTP.
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 
 // Biblioteca utilizada para generar gráficas.
 import Chart from 'chart.js/auto';
@@ -52,6 +52,22 @@ import { Api } from '../../core/services/api';
 
 // Servicio de autenticación JWT.
 import { Auth } from '../../core/services/auth';
+
+// Estructura del JSON publicado por Flask (/api/v1/dashboard/estadisticas).
+interface EstadisticasDashboard {
+  success: boolean;
+  nota: string;
+  kpis: {
+    ventas_confirmadas: number;
+    pedidos_pendientes: number;
+    clientes_compradores: number;
+    unidades_vendidas: number;
+    pagos_simulados_aprobados: number;
+  };
+  ventas_por_dia: { fecha: string; monto: number }[];
+  pedidos_por_estado: { estado: string; cantidad: number }[];
+  productos_mas_vendidos: { id_producto: number; nombre: string; unidades: number }[];
+}
 
 // ======================================================
 // 2. CONFIGURACIÓN DEL COMPONENTE
@@ -82,6 +98,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   // Servicio para consultar la API Flask.
   private readonly api = inject(Api);
+  private readonly http = inject(HttpClient);
 
   // Servicio de autenticación.
   //
@@ -109,6 +126,14 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   // Guardar la instancia de Chart.js.
   private chart?: Chart;
+  private estadosChart?: Chart;
+  private productosChart?: Chart;
+  @ViewChild('estadosChart') estadosCanvas?: ElementRef<HTMLCanvasElement>;
+  @ViewChild('productosChart') productosCanvas?: ElementRef<HTMLCanvasElement>;
+  readonly cargandoEstadisticas = signal(true);
+  readonly errorEstadisticas = signal('');
+  readonly fechaEstadisticas = signal('');
+  pagosSimulados = 0;
 
   // ====================================================
   // 7. INDICADORES COMERCIALES
@@ -123,7 +148,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   pedidosPendientes = 0;
 
-  clientesRegistrados = 0;
+  clientesRegistrados = 0; // KPI visual: compradores distintos, no usuarios registrados
 
   productosVendidos = 0;
 
@@ -132,6 +157,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   // ====================================================
 
   ngOnInit(): void {
+    this.cargarEstadisticas();
     // Consultar el endpoint protegido:
     //
     // GET /api/v1/dashboard/status
@@ -254,89 +280,122 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     this.router.navigateByUrl('/login');
   }
 
-  // ====================================================
-  // 10. CREAR GRÁFICA DE VENTAS
-  // ====================================================
+  /** Consulta protegida. Las gráficas se muestran vacías si falla Flask. */
+  cargarEstadisticas(): void {
+    this.cargandoEstadisticas.set(true);
+    this.errorEstadisticas.set('');
+    this.http
+      .get<EstadisticasDashboard>('http://127.0.0.1:5000/api/v1/dashboard/estadisticas')
+      .subscribe({
+        next: (datos) => {
+          this.ventasConfirmadas = datos.kpis.ventas_confirmadas;
+          this.pedidosPendientes = datos.kpis.pedidos_pendientes;
+          this.clientesRegistrados = datos.kpis.clientes_compradores;
+          this.productosVendidos = datos.kpis.unidades_vendidas;
+          this.pagosSimulados = datos.kpis.pagos_simulados_aprobados;
+          this.fechaEstadisticas.set(new Date().toLocaleString('es-MX'));
+          this.pintarEstadisticas(datos);
+          this.cargandoEstadisticas.set(false);
+        },
+        error: (e: HttpErrorResponse) => {
+          this.cargandoEstadisticas.set(false);
+          this.errorEstadisticas.set(
+            e.status === 401 || e.status === 403
+              ? 'Tu sesión administrativa expiró o no tiene permisos.'
+              : 'No fue posible consultar las estadísticas reales de MySQL.',
+          );
+          this.chart?.destroy();
+          this.chart = undefined;
+          this.estadosChart?.destroy();
+          this.estadosChart = undefined;
+          this.productosChart?.destroy();
+          this.productosChart = undefined;
+        },
+      });
+  }
 
-  ngAfterViewInit(): void {
-    // Obtener el canvas definido en dashboard.html.
-    const canvas = this.ventasCanvas?.nativeElement;
-
-    // Si el canvas no existe, evitar errores.
-    if (!canvas) {
+  /** Renderiza los datos de Flask únicamente cuando hay canvas en pantalla. */
+  private pintarEstadisticas(datos: EstadisticasDashboard): void {
+    if (!this.ventasCanvas || !this.estadosCanvas || !this.productosCanvas) {
+      this.datosPendientes = datos;
       return;
     }
+    this.chart?.destroy();
+    this.estadosChart?.destroy();
+    this.productosChart?.destroy();
 
-    // ==================================================
-    // CONFIGURACIÓN DE CHART.JS
-    // ==================================================
-
-    this.chart = new Chart(canvas, {
-      // Gráfica de líneas.
+    this.chart = new Chart(this.ventasCanvas.nativeElement, {
       type: 'line',
-
-      // ================================================
-      // DATOS DE LA GRÁFICA
-      // ================================================
-
       data: {
-        // Días de la semana.
-        labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
-
+        labels: datos.ventas_por_dia.map((d) => d.fecha),
         datasets: [
           {
-            // Nombre de la serie.
-            label: 'Ventas confirmadas (MXN)',
-
-            // Datos temporales.
-            data: [0, 0, 0, 0, 0, 0, 0],
-
-            // Terracota de la marca.
+            label: 'Importe de pedidos (MXN)',
+            data: datos.ventas_por_dia.map((d) => d.monto),
             borderColor: '#A65A2E',
-
-            // Terracota transparente.
-            backgroundColor: 'rgba(166, 90, 46, 0.12)',
-
-            // Relleno bajo la línea.
+            backgroundColor: 'rgba(166,90,46,0.12)',
             fill: true,
-
-            // Suavizar la línea.
-            tension: 0.35,
+            tension: 0.3,
           },
         ],
       },
-
-      // ================================================
-      // OPCIONES DE LA GRÁFICA
-      // ================================================
-
       options: {
-        // Adaptar el gráfico al contenedor.
         responsive: true,
-
-        // Permitir usar la altura del CSS.
         maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true } },
+      },
+    });
 
-        // Configuración del eje vertical.
-        scales: {
-          y: {
-            beginAtZero: true,
+    this.estadosChart = new Chart(this.estadosCanvas.nativeElement, {
+      type: 'doughnut',
+      data: {
+        labels: datos.pedidos_por_estado.map((d) => d.estado.replaceAll('_', ' ')),
+        datasets: [
+          {
+            label: 'Pedidos',
+            data: datos.pedidos_por_estado.map((d) => d.cantidad),
+            backgroundColor: ['#A65A2E', '#718063', '#4B2E1F', '#D9A77E', '#9B8B7B', '#E8C8AB'],
           },
-        },
+        ],
+      },
+      options: { responsive: true, maintainAspectRatio: false },
+    });
+
+    this.productosChart = new Chart(this.productosCanvas.nativeElement, {
+      type: 'bar',
+      data: {
+        labels: datos.productos_mas_vendidos.map((d) => d.nombre),
+        datasets: [
+          {
+            label: 'Unidades vendidas',
+            data: datos.productos_mas_vendidos.map((d) => d.unidades),
+            backgroundColor: '#718063',
+          },
+        ],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { x: { beginAtZero: true, ticks: { precision: 0 } } },
       },
     });
   }
 
-  // ====================================================
-  // 11. LIBERAR RECURSOS
-  // ====================================================
+  // Chart.js se crea cuando llega la respuesta de Flask.
+  // Si la respuesta llega antes que la vista, conservarla para renderizarla.
+  private datosPendientes?: EstadisticasDashboard;
+
+  ngAfterViewInit(): void {
+    if (this.datosPendientes) {
+      this.pintarEstadisticas(this.datosPendientes);
+      this.datosPendientes = undefined;
+    }
+  }
 
   ngOnDestroy(): void {
-    // Destruir la instancia de Chart.js
-    // cuando abandonamos el dashboard.
-    //
-    // Evita gráficas duplicadas y fugas de memoria.
-
     this.chart?.destroy();
+    this.estadosChart?.destroy();
+    this.productosChart?.destroy();
   }
 }

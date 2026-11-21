@@ -70,6 +70,17 @@ export class MisPedidosCliente implements OnInit {
     });
   }
 
+  /** Texto de autorización independiente del estado comercial o del pago. */
+  estadoAutorizacionVisible(pedido: PedidoClienteConSeguimiento): string {
+    switch (pedido.autorizacion?.estado) {
+      case 'APROBADO': return 'APROBADO';
+      case 'RECHAZADO': return 'RECHAZADO';
+      case 'POR_REVISAR': return 'POR REVISAR';
+      case 'HISTORICO_ENTREGADO': return 'HISTÓRICO ENTREGADO';
+      default: return 'NO DISPONIBLE';
+    }
+  }
+
   dinero(valor: string | number | null | undefined): string {
     const numero = Number(valor);
     return Number.isFinite(numero)

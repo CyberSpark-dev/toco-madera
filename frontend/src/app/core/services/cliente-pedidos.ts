@@ -22,9 +22,16 @@ export interface PedidoCliente {
   fecha: string;
   estado: string;
   modalidad_pago: ModalidadPago;
+  /** Decisión ADMIN independiente del estado comercial del pedido. */
+  autorizacion: {
+    estado: 'POR_REVISAR' | 'APROBADO' | 'RECHAZADO' | 'HISTORICO_ENTREGADO';
+    fecha_decision: string | null;
+    motivo: string | null;
+  };
   detalles: Array<{
     id_detalle_pedido: number;
     id_producto: number;
+    nombre_producto?: string | null;
     cantidad: number;
     precio_unitario_acordado: string;
     texto_grabado: string | null;

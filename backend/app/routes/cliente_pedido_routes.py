@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 
 from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from sqlalchemy import MetaData, Table, select, insert, update
+from sqlalchemy import MetaData, Table, select, insert, update, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.extensions import db
@@ -137,8 +137,14 @@ def obtener_pedido(tablas, id_pedido, id_cliente):
     ).mappings().first()
     if pedido is None:
         return None
+    # Etapa 3.20.7: añadir nombre del producto SOLO a la respuesta de lectura.
+    # Mantiene los ids, precios acordados, grabados y cálculos sin cambios.
+    productos = tablas['productos']
     detalles = db.session.execute(
-        select(d).where(d.c.id_pedido == id_pedido).order_by(d.c.id_detalle_pedido)
+        select(d, productos.c.nombre.label('nombre_producto'))
+        .outerjoin(productos, d.c.id_producto == productos.c.id_producto)
+        .where(d.c.id_pedido == id_pedido)
+        .order_by(d.c.id_detalle_pedido)
     ).mappings().all()
     filas_pago = db.session.execute(
         select(pagos).where(pagos.c.id_pedido == id_pedido).order_by(pagos.c.id_pago)
@@ -146,11 +152,33 @@ def obtener_pedido(tablas, id_pedido, id_cliente):
     saldo = db.session.execute(
         select(saldos).where(saldos.c.id_pedido == id_pedido)
     ).mappings().first()
+    # Etapa 3.20.3: La identidad del cliente se validó ARRIBA, antes de consultar
+    # autorizaciones. Nunca buscar autorizaciones de pedidos de otros clientes.
+    autorizacion_fila = db.session.execute(text('''
+        SELECT estado, fecha_decision, motivo
+        FROM autorizaciones_pedido
+        WHERE id_pedido = :id_pedido
+    '''), {'id_pedido': id_pedido}).mappings().first()
+
+    # Las entregas históricas anteriores al módulo NO se muestran como
+    # pendientes de aprobación. No se inventa una aprobación retroactiva.
+    es_historico = pedido['estado'] == 'ENTREGADO' and autorizacion_fila is None
+    estado_autorizacion = (
+        'HISTORICO_ENTREGADO' if es_historico
+        else autorizacion_fila['estado'] if autorizacion_fila is not None
+        else 'POR_REVISAR'
+    )
+    autorizacion = {
+        'estado': estado_autorizacion,
+        'fecha_decision': valor_json(autorizacion_fila['fecha_decision']) if autorizacion_fila else None,
+        'motivo': autorizacion_fila['motivo'] if autorizacion_fila else None,
+    }
     return {
         **fila_json(pedido),
         'detalles': [fila_json(row) for row in detalles],
         'pagos': [fila_json(row) for row in filas_pago],
         'resumen': fila_json(saldo) if saldo is not None else None,
+        'autorizacion': autorizacion,
     }
 
 

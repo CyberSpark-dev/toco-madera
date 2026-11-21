@@ -134,11 +134,13 @@ from app.routes.admin_receta_routes import admin_recetas_bp
 
 from app.routes.cliente_pedido_routes import cliente_pedidos_bp
 
-    # =====================================================
-    # ETAPA 3.19.2 - ÓRDENES DE PRODUCCIÓN
-    # =====================================================
-
+# =====================================================
+# ETAPA 3.19.2 - ÓRDENES DE PRODUCCIÓN
+# =====================================================
 from app.routes.admin_produccion_routes import admin_produccion_bp
+
+# Etapa 3.20.2 - nuevo Blueprint de revisión de pedidos.
+from app.routes.admin_pedidos_revision_routes import admin_revision_pedidos_bp
 
 
 # ============================================================
@@ -360,16 +362,12 @@ def create_app():
     # =====================================================
     # ETAPA 3.19.2 - ÓRDENES DE PRODUCCIÓN
     # =====================================================
-
-    
-
     app.register_blueprint(admin_produccion_bp)
 
 
-# =====================================================
-# COSTOS BASE DE MATERIAS PRIMAS
-# ETAPA 3.19.3
-# =====================================================
+    # =====================================================
+    # COSTOS BASE DE MATERIAS PRIMAS - ETAPA 3.19.3
+    # =====================================================
 
     from app.routes.admin_costos_materiales_routes import (
         admin_costos_materiales_bp
@@ -390,9 +388,9 @@ def create_app():
     app.register_blueprint(admin_producto_terminado_bp)
 
 
-# ==============================================
-# ETAPA 3.19.5 - ENTREGAS Y SEGUIMIENTO
-# ==============================================
+    # ==============================================
+    # ETAPA 3.19.5 - ENTREGAS Y SEGUIMIENTO
+    # ==============================================
 
     from app.routes.admin_entregas_routes import (
         admin_entregas_bp,
@@ -401,6 +399,11 @@ def create_app():
 
     app.register_blueprint(admin_entregas_bp)
     app.register_blueprint(cliente_seguimiento_bp)
+
+    # ======================================================
+    # ETAPA 3.20.2 - REVISIÓN Y AUTORIZACIÓN ADMINISTRATIVA
+    # ======================================================
+    app.register_blueprint(admin_revision_pedidos_bp)
 
 
 

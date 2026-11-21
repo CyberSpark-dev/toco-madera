@@ -37,6 +37,13 @@ def _pendiente_total(id_pedido):
     return max(Decimal('0'), Decimal(str(total or 0))-Decimal(str(pagado or 0)))
 
 
+def _autorizado_para_entrega(id_pedido):
+    estado = db.session.execute(text('''
+        SELECT estado FROM autorizaciones_pedido WHERE id_pedido=:id
+    '''), {'id':id_pedido}).scalar_one_or_none()
+    return estado == 'APROBADO'
+
+
 def _pedido_bloqueado(id_pedido):
     return db.session.execute(text('''
         SELECT id_pedido, folio, id_cliente, fecha, estado, modalidad_pago,
@@ -157,6 +164,8 @@ def programar_recoleccion(id_pedido):
             db.session.rollback();return jsonify(success=False,message='Este pedido no es de recolección.'),409
         if p['estado'] in ('CANCELADO','ENTREGADO','PENDIENTE_ANTICIPO'):
             db.session.rollback();return jsonify(success=False,message='Estado de pedido incompatible con programación.'),409
+        if not _autorizado_para_entrega(id_pedido):
+            db.session.rollback();return jsonify(success=False,message='Debes autorizar el pedido antes de programar la entrega.'),409
         existente=db.session.execute(text('SELECT id_entrega,estado FROM entregas WHERE id_pedido=:id FOR UPDATE'),{'id':id_pedido}).mappings().first()
         if existente and existente['estado']=='ENTREGADA':
             db.session.rollback();return jsonify(success=False,message='Entrega ya realizada.'),409
@@ -183,6 +192,8 @@ def marcar_listo(id_pedido):
             db.session.rollback();return jsonify(success=False,message='Pedido no encontrado.'),404
         if p['estado'] not in ('CONFIRMADO','EN_PRODUCCION'):
             db.session.rollback();return jsonify(success=False,message='El pedido no admite cambiar a LISTO.'),409
+        if not _autorizado_para_entrega(id_pedido):
+            db.session.rollback();return jsonify(success=False,message='Debes autorizar el pedido antes de marcarlo LISTO.'),409
         correcto,_,mensaje=_verificar_productos(id_pedido, bloquear=True)
         if not correcto:
             db.session.rollback();return jsonify(success=False,message=mensaje),409

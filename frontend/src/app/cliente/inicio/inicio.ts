@@ -52,6 +52,8 @@ import { CarritoService } from '../../core/services/carrito';
 // COMPONENTE ANGULAR
 // ============================================================
 
+import { imagenProducto } from '../../core/utils/imagenes-productos';
+
 @Component({
   selector: 'app-inicio',
   standalone: true,
@@ -65,7 +67,7 @@ export class Inicio implements OnInit {
   // ==========================================================
   // 1. SERVICIOS
   // ==========================================================
-
+  readonly imagenProducto = imagenProducto; // Función para obtener la imagen de un producto.
   // Autenticación existente del proyecto.
   readonly auth = inject(Auth);
 

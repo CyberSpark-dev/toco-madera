@@ -8,15 +8,17 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CarritoService, ProductoCatalogo } from '../../core/services/carrito';
 import { CatalogoCarritoService } from '../../core/services/catalogo-carrito';
+import { imagenProducto } from '../../core/utils/imagenes-productos';
 
 @Component({
   selector: 'app-carrito-cliente',
   standalone: true,
   imports: [FormsModule, RouterLink],
   templateUrl: './carrito.html',
-  styleUrl: './carrito.css'
+  styleUrl: './carrito.css',
 })
 export class CarritoCliente implements OnInit {
+  readonly imagenProducto = imagenProducto;
   readonly carrito = inject(CarritoService);
   private readonly catalogoApi = inject(CatalogoCarritoService);
 
@@ -32,29 +34,32 @@ export class CarritoCliente implements OnInit {
   grabado = '';
   notas = '';
 
-  ngOnInit(): void { this.cargarCatalogo(); }
+  ngOnInit(): void {
+    this.cargarCatalogo();
+  }
 
   cargarCatalogo(): void {
     this.cargando.set(true);
     this.error.set('');
     this.catalogoApi.listar().subscribe({
-      next: productos => {
+      next: (productos) => {
         this.productos.set(productos);
         this.cargando.set(false);
       },
-      error: error => {
+      error: (error) => {
         console.error('Error del catálogo:', error);
         this.error.set('No pudimos cargar el catálogo. Comprueba que Flask esté encendido.');
         this.cargando.set(false);
-      }
+      },
     });
   }
 
   productosFiltrados(): ProductoCatalogo[] {
     const texto = this.busqueda().trim().toLocaleLowerCase();
-    return this.productos().filter(p =>
-      p.nombre.toLocaleLowerCase().includes(texto) ||
-      (p.sku ?? '').toLocaleLowerCase().includes(texto)
+    return this.productos().filter(
+      (p) =>
+        p.nombre.toLocaleLowerCase().includes(texto) ||
+        (p.sku ?? '').toLocaleLowerCase().includes(texto),
     );
   }
 
@@ -65,10 +70,18 @@ export class CarritoCliente implements OnInit {
     this.notas = '';
     this.error.set('');
     this.mensaje.set('');
-    setTimeout(() => document.getElementById('configurar-producto')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+    setTimeout(
+      () =>
+        document
+          .getElementById('configurar-producto')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      0,
+    );
   }
 
-  cancelarSeleccion(): void { this.elegido.set(null); }
+  cancelarSeleccion(): void {
+    this.elegido.set(null);
+  }
 
   agregar(): void {
     const p = this.elegido();
@@ -78,7 +91,13 @@ export class CarritoCliente implements OnInit {
       this.mensaje.set(`Se agregó ${p.nombre} al carrito.`);
       this.error.set('');
       this.elegido.set(null);
-      setTimeout(() => document.getElementById('mi-carrito')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+      setTimeout(
+        () =>
+          document
+            .getElementById('mi-carrito')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+        0,
+      );
     } catch (e) {
       this.error.set(e instanceof Error ? e.message : 'No fue posible agregar el producto.');
     }

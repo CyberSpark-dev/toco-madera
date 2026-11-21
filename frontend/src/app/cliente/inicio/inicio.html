@@ -30,7 +30,11 @@
   <header class="bg-white shadow-sm">
     <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 p-5">
       <!-- NOMBRE COMERCIAL -->
-      <a routerLink="/" class="font-brand text-2xl font-bold text-nogal"> Toco Madera </a>
+      <a routerLink="/" class="inline-flex items-center gap-3 font-brand text-2xl font-bold text-nogal">
+        <img src="/logo-icono.png" alt="" width="48" height="48"
+          class="h-12 w-12 shrink-0 object-contain" />
+        <span>Toco Madera</span>
+      </a>
 
       <!-- ============================================
            MENÚ DINÁMICO
@@ -172,9 +176,14 @@
     ============================================ -->
 
     <section class="mb-16 text-center">
-      <h1 class="mb-5 font-brand text-4xl font-bold text-nogal md:text-5xl">
-        {{ nombreEmpresa }}
-      </h1>
+      <!-- Identidad visual principal: logo a la izquierda, nombre a la derecha -->
+      <div class="mb-5 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-5">
+        <img src="/logo-icono.png" alt="" width="112" height="112"
+          class="h-24 w-24 shrink-0 object-contain sm:h-28 sm:w-28" />
+        <h1 class="font-brand text-4xl font-bold text-nogal md:text-5xl">
+          {{ nombreEmpresa }}
+        </h1>
+      </div>
 
       <p class="mb-6 text-2xl text-terracota">
         {{ eslogan }}
@@ -285,15 +294,24 @@
             <article
               class="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-shadow duration-200 hover:shadow-lg"
             >
-              <!-- ==================================
-                   IMAGEN PROVISIONAL
-              ================================== -->
-
-              <div class="flex h-44 items-center justify-center bg-[#F9E9D5] px-6 text-center">
-                <span class="font-brand text-xl font-semibold text-nogal">
-                  {{ producto.nombre }}
-                </span>
-              </div>
+              <!-- Fotografía ambientada del producto, alojada en frontend/public/productos -->
+              @if (imagenProducto(producto.nombre, 'ambiente'); as foto) {
+                <img
+                  [src]="foto"
+                  [alt]="'Fotografía demostrativa artesanal de ' + producto.nombre"
+                  class="h-56 w-full bg-[#F9E9D5] object-cover"
+                  loading="lazy"
+                  width="560"
+                  height="400"
+                />
+              } @else {
+                <!-- Nombre visible si el producto no tiene fotografía asignada -->
+                <div class="flex h-56 items-center justify-center bg-[#F9E9D5] px-6 text-center">
+                  <span class="font-brand text-xl font-semibold text-nogal">
+                    {{ producto.nombre }}
+                  </span>
+                </div>
+              }
 
               <!-- ==================================
                    INFORMACIÓN DEL PRODUCTO

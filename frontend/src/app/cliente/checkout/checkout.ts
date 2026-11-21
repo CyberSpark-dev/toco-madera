@@ -13,18 +13,27 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CarritoService } from '../../core/services/carrito';
-import { ClientePedidosService, ModalidadPago, MetodoPago, PedidoCliente } from '../../core/services/cliente-pedidos';
+import {
+  ClientePedidosService,
+  ModalidadPago,
+  MetodoPago,
+  PedidoCliente,
+} from '../../core/services/cliente-pedidos';
 import { Auth } from '../../core/services/auth';
 import { IdMedioDemo, MetodosPagoDemoService } from '../../core/services/metodos-pago-demo';
+
+import { imagenProducto } from '../../core/utils/imagenes-productos';
 
 @Component({
   selector: 'app-checkout-cliente',
   standalone: true,
   imports: [FormsModule, RouterLink],
   templateUrl: './checkout.html',
-  styleUrl: './checkout.css'
+  styleUrl: './checkout.css',
 })
 export class CheckoutCliente implements OnInit {
+  readonly imagenProducto = imagenProducto;
+
   readonly carrito = inject(CarritoService);
   readonly auth = inject(Auth);
   readonly medios = inject(MetodosPagoDemoService);
@@ -49,7 +58,7 @@ export class CheckoutCliente implements OnInit {
   readonly ejemploTransferencia = '000000000000000000';
 
   ngOnInit(): void {
-    this.medios.cargar(this.auth.esCliente() ? this.auth.usuario()?.id_usuario ?? null : null);
+    this.medios.cargar(this.auth.esCliente() ? (this.auth.usuario()?.id_usuario ?? null) : null);
   }
 
   dinero(v: number | string): string {
@@ -64,7 +73,11 @@ export class CheckoutCliente implements OnInit {
   /** Actualiza únicamente memoria del componente: el valor no se persiste. */
   actualizarNumero(valor: string): void {
     const maximo = this.metodo === 'TARJETA_SIMULADA' ? 16 : 18;
-    this.numeroCapturado.set(String(valor ?? '').replace(/\D/g, '').slice(0, maximo));
+    this.numeroCapturado.set(
+      String(valor ?? '')
+        .replace(/\D/g, '')
+        .slice(0, maximo),
+    );
     this.error.set('');
     this.codigoError.set(null);
   }
@@ -80,9 +93,7 @@ export class CheckoutCliente implements OnInit {
   /** Para tarjeta mostramos grupos de cuatro; transferencia conserva 18 dígitos. */
   numeroVisible(): string {
     const digitos = this.numeroCapturado();
-    return this.metodo === 'TARJETA_SIMULADA'
-      ? digitos.replace(/(\d{4})(?=\d)/g, '$1 ')
-      : digitos;
+    return this.metodo === 'TARJETA_SIMULADA' ? digitos.replace(/(\d{4})(?=\d)/g, '$1 ') : digitos;
   }
 
   cargarGuardado(id: IdMedioDemo): void {
@@ -112,7 +123,9 @@ export class CheckoutCliente implements OnInit {
     }
     const id = this.medios.identificar(digitos, this.metodo);
     if (!id) {
-      this.error.set('Este simulador solo acepta los números ficticios de prueba indicados. No introduzcas datos bancarios reales.');
+      this.error.set(
+        'Este simulador solo acepta los números ficticios de prueba indicados. No introduzcas datos bancarios reales.',
+      );
       return null;
     }
     return id;
@@ -123,7 +136,8 @@ export class CheckoutCliente implements OnInit {
     this.error.set('');
     this.codigoError.set(null);
     if (this.carrito.vacio()) {
-      this.error.set('El carrito está vacío.'); return;
+      this.error.set('El carrito está vacío.');
+      return;
     }
     if (!this.auth.autenticado()) {
       this.codigoError.set(401);
@@ -136,15 +150,18 @@ export class CheckoutCliente implements OnInit {
       return;
     }
     if (this.metodo !== 'TRANSFERENCIA_SIMULADA' && this.metodo !== 'TARJETA_SIMULADA') {
-      this.error.set('Selecciona transferencia o tarjeta simulada.'); return;
+      this.error.set('Selecciona transferencia o tarjeta simulada.');
+      return;
     }
     const idDemo = this.validarInstrumento();
     if (!idDemo) return;
     if (!this.aceptaSimulacion) {
-      this.error.set('Debes aceptar que se trata de una simulación académica.'); return;
+      this.error.set('Debes aceptar que se trata de una simulación académica.');
+      return;
     }
     if (this.notas.length > 500) {
-      this.error.set('Las observaciones admiten máximo 500 caracteres.'); return;
+      this.error.set('Las observaciones admiten máximo 500 caracteres.');
+      return;
     }
 
     // Capturar el propietario ANTES de enviar la solicitud asíncrona.
@@ -157,40 +174,52 @@ export class CheckoutCliente implements OnInit {
 
     this.procesando.set(true);
     // No se envía ningún número de tarjeta o CLABE a Flask.
-    this.api.confirmar({
-      clave_solicitud: this.carrito.claveSolicitud(),
-      modalidad_pago: this.modalidad,
-      metodo_pago: this.metodo,
-      notas: this.notas.trim() || null,
-      detalles: this.carrito.datosCheckout()
-    }).subscribe({
-      next: respuesta => {
-        if (this.guardarParaDespues) {
-          this.medios.guardar(idDemo);
-        }
-        this.numeroCapturado.set('');
-        this.confirmado.set(respuesta.pedido);
-        this.carrito.vaciarDeUsuario(idClienteCheckout);
-        this.procesando.set(false);
-      },
-      error: (e: HttpErrorResponse) => {
-        this.procesando.set(false);
-        this.codigoError.set(e.status);
-        console.error('Checkout HTTP:', e.status, e);
-        if (e.status === 401) {
-          this.error.set('La sesión no está disponible. Inicia sesión nuevamente.');
-        } else if (e.status === 403) {
-          this.error.set('Flask rechazó el rol: usa una cuenta CLIENTE.');
-        } else if (e.status === 409) {
-          this.error.set('El pedido podría estar registrado. Comprueba Mis pedidos antes de reintentar.');
-        } else if (e.status >= 500) {
-          this.error.set('Error de Flask/MySQL. Revisa Mis pedidos y el registro del servidor antes de reintentar.');
-        } else if (e.status === 0) {
-          this.error.set('No fue posible conectar con Flask. Comprueba Mis pedidos antes de reintentar.');
-        } else {
-          this.error.set(typeof e.error?.message === 'string' ? e.error.message : 'No fue posible confirmar el pedido.');
-        }
-      }
-    });
+    this.api
+      .confirmar({
+        clave_solicitud: this.carrito.claveSolicitud(),
+        modalidad_pago: this.modalidad,
+        metodo_pago: this.metodo,
+        notas: this.notas.trim() || null,
+        detalles: this.carrito.datosCheckout(),
+      })
+      .subscribe({
+        next: (respuesta) => {
+          if (this.guardarParaDespues) {
+            this.medios.guardar(idDemo);
+          }
+          this.numeroCapturado.set('');
+          this.confirmado.set(respuesta.pedido);
+          this.carrito.vaciarDeUsuario(idClienteCheckout);
+          this.procesando.set(false);
+        },
+        error: (e: HttpErrorResponse) => {
+          this.procesando.set(false);
+          this.codigoError.set(e.status);
+          console.error('Checkout HTTP:', e.status, e);
+          if (e.status === 401) {
+            this.error.set('La sesión no está disponible. Inicia sesión nuevamente.');
+          } else if (e.status === 403) {
+            this.error.set('Flask rechazó el rol: usa una cuenta CLIENTE.');
+          } else if (e.status === 409) {
+            this.error.set(
+              'El pedido podría estar registrado. Comprueba Mis pedidos antes de reintentar.',
+            );
+          } else if (e.status >= 500) {
+            this.error.set(
+              'Error de Flask/MySQL. Revisa Mis pedidos y el registro del servidor antes de reintentar.',
+            );
+          } else if (e.status === 0) {
+            this.error.set(
+              'No fue posible conectar con Flask. Comprueba Mis pedidos antes de reintentar.',
+            );
+          } else {
+            this.error.set(
+              typeof e.error?.message === 'string'
+                ? e.error.message
+                : 'No fue posible confirmar el pedido.',
+            );
+          }
+        },
+      });
   }
 }

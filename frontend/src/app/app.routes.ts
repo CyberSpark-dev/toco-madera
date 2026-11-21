@@ -187,6 +187,22 @@ export const routes: Routes = [
       import('./cliente/mis-pedidos/mis-pedidos').then((m) => m.MisPedidosCliente),
   },
 
+  // Etapa 3.20.2 - revisión y autorización administrativa.
+  {
+    path: 'admin/pedidos',
+    title: 'Toco Madera | Revision de pedidos',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./admin/pedidos/pedidos').then((m) => m.PedidosAdmin),
+  },
+
+  // Etapa 3.20.4: flujo visual completo de taller, producción y entregas.
+  {
+    path: 'admin/operaciones',
+    title: 'Toco Madera | Taller y entregas',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./admin/operaciones/operaciones').then((m) => m.OperacionesAdmin),
+  },
+
   // ====================================================
   // 6. RUTA DESCONOCIDA
   // ====================================================

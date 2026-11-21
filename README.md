@@ -4,7 +4,7 @@
 
 **Toco Madera** es una aplicación web progresiva (PWA) académica orientada a una empresa de transformación artesanal de madera en León, Guanajuato, México. Permite ofrecer productos de madera personalizables a clientes y centralizar, mediante un panel protegido, las operaciones administrativas del negocio.
 
-**Estado de desarrollo (20 de noviembre de 2026):** etapas **3.18, 3.19.2, 3.19.3, 3.19.4 y 3.19.6** probadas manualmente en las funciones descritas abajo. La programación y el estado LISTO de la **3.19.5** funcionan; **la liquidación del saldo y la entrega final siguen pendientes de ejecución/verificación**. La corrección del carrito independiente por usuario fue validada. El dashboard con estadísticas reales y la validación final de instalación PWA siguen pendientes. Proyecto académico: sin pagos bancarios reales ni despliegue productivo.
+**Estado de desarrollo (20 de noviembre de 2026):** etapas **3.18 y 3.19.2–3.19.6** probadas funcionalmente en las operaciones descritas abajo. El pedido académico **5** se liquidó con un pago simulado de **$165.00 MXN** y se confirmó una respuesta exitosa del endpoint de entrega; **la conciliación final del movimiento negativo y saldo de inventario en MySQL todavía requiere comprobación**. Carrito independiente por usuario validado. Dashboard con estadísticas reales y validación de instalación PWA pendientes. No se realizan pagos bancarios reales ni existe despliegue productivo.
 
 ## 1. Objetivo y alcance
 
@@ -382,7 +382,7 @@ La existencia de cada material se obtiene sumando `movimientos_material.cantidad
 
 Las recetas usan `recetas` y `receta_materiales`: producto, versión, vigencia, tiempos de fabricación/grabado, costos de mano de obra e indirectos, observaciones y cantidad por material para producir **una unidad**. Crear o activar una versión no genera movimientos de inventario. El versionado conserva el historial; los cambios de vigencia de un mismo producto se realizan en una transacción.
 
-**Advertencia:** el costo de proceso mostrado en Angular es mano de obra más indirectos, no costo integral de producción; para este último faltan valoración y consumo de materiales. La Etapa 3.19 deberá conservar la versión específica de receta utilizada por cada orden de fabricación.
+**Advertencia:** el costo de proceso de la receta (mano de obra e indirectos) no representa por sí solo el costo integral. La Etapa 3.19 incorporó consumo material transaccional y el catálogo `costo_base`; la actualización automática del costo integral y sugerencias de precio, sujetos a aprobación ADMIN y margen objetivo del 40 %, continúan pendientes.
 
 **Ejemplo de cuerpo JSON para registro o edición:**
 
@@ -450,13 +450,13 @@ Reemplazar el correo con el de la cuenta real. El comando exige confirmar expres
 17. Las compras inician como `BORRADOR`; solo la recepción genera movimientos de entrada y transición a `RECIBIDA`. Una compra recibida no se recibe ni cancela por segunda vez desde el módulo actual.
 18. El inventario se calcula como `SUM(cantidad_firmada)` por material y se contrasta con `stock_minimo` sin sobrescribir movimientos previos.
 19. Las recetas tienen versiones: solo una versión vigente por producto; nuevas versiones preservan el historial y no descuentan materiales.
-20. Los pedidos y sus pagos simulados están implementados y requieren validaciones y transacciones atómicas. Las órdenes de producción, el consumo de materias primas y la generación de lotes se probaron manualmente; la programación de entregas y el aviso al cliente también. La liquidación y entrega final siguen pendientes de verificación.
+20. Los pedidos y sus pagos simulados están implementados y requieren validaciones y transacciones atómicas. Las órdenes de producción, el consumo de materias primas y la generación de lotes se probaron manualmente; la programación de entregas y el aviso al cliente también. La liquidación del pedido de prueba 5 se comprobó con saldo final cero; el endpoint de entrega devolvió resultado exitoso según el desarrollador y queda pendiente la conciliación del egreso de producto en MySQL.
 21. El carrito se separa por `id_usuario` en almacenamiento local del mismo navegador, no se comparte entre clientes y no se sincroniza entre dispositivos.
 22. La entrega programada muestra fecha, lugar y estado a través de una API protegida, y el cliente consulta total, pagado y saldo desde el historial de pedidos.
 23. Tiempos orientativos: producto disponible sin grabado, 3 a 6 horas sujeto a horario y stock; personalizado individual, 2 a 3 días hábiles; pedido por volumen (10 o más piezas), 5 a 7 días hábiles sujetos a confirmación. La fecha concreta debe acordarse, no asumirse garantizada.
 24. Recolección en taller o punto acordado: sin cargo; envío urbano local previsto por cotización, no activo en el checkout de esta entrega. Los pagos de la prueba siguen siendo simulados.
 
-El cierre integral del flujo fabricación-entrega está en pruebas. La lectura de inventario y recetas fue desarrollada en la Etapa 3.17.
+El flujo fabricación-entrega alcanzó la respuesta exitosa de entrega del pedido 5; falta verificar los movimientos de egreso y el saldo final del lote en MySQL. La lectura de inventario y recetas fue desarrollada en la Etapa 3.17.
 
 ## 10. Estado de los módulos (base 3.18 y actualización 3.19)
 
@@ -478,10 +478,10 @@ El cierre integral del flujo fabricación-entrega está en pruebas. La lectura d
 | Pedidos e historial del cliente | **Etapa 3.18: integrados y validados manualmente** |
 | Compras, registro de detalles y recepción | **Etapa 3.17: validada manualmente** |
 | Existencias, movimientos y alertas de materiales | **Etapa 3.17: validada manualmente** |
-| Inventario de producto terminado | **Entrada de fabricación probada: lote de la orden 1 y movimiento PRODUCCION +1**; salida por entrega aún pendiente |
+| Inventario de producto terminado | **Entrada PRODUCCION +1 validada; entrega exitosa reportada para pedido 5, falta confirmar salida ENTREGA -1 y saldo del lote en MySQL** |
 | Recetas, ingredientes y versionado | **Etapa 3.17: diez pruebas confirmadas** |
 | Órdenes de producción y consumos de materiales | **Etapas 3.19.2–3.19.3: pruebas manuales satisfactorias** |
-| Seguimiento de entregas | **Programación, estado LISTO y API cliente validados; entrega final pendiente** |
+| Seguimiento de entregas | **Programación, estado LISTO, API cliente, liquidación y respuesta de entrega exitosas; conciliación SQL de entrega pendiente** |
 | Estadísticas reales desde MySQL | Pendiente; gráficas Chart.js obligatorias |
 | Pruebas automatizadas, auditoría y despliegue | Pendiente |
 
@@ -736,7 +736,7 @@ El dashboard mantiene sus KPI y la gráfica semanal Chart.js con **valores provi
 | **3.19.2** | Orden de producción y listado de pendientes, verificados manualmente |
 | **3.19.3** | Consumo transaccional de materiales, stock y control de duplicados, validados |
 | **3.19.4** | Fabricación terminada: lote y movimiento de entrada `PRODUCCION +1` verificados |
-| **3.19.5** | Programación de recolección y estado `LISTO` verificados; liquidación y entrega final pendientes |
+| **3.19.5** | Programación, LISTO, liquidación simulada del pedido 5 (saldo 0) y respuesta exitosa de entrega; falta conciliación SQL del movimiento de salida |
 | **3.19.6** | Integración de historial financiero y avisos en Mis pedidos; seis comprobaciones funcionales confirmadas |
 | Corrección transversal | Carrito independiente por usuario; separación y retorno a la cuenta probados |
 | 3.20 y entrega | Gráficas reales, PWA instalable, pruebas integrales y entrega final pendientes |
@@ -747,12 +747,12 @@ El dashboard mantiene sus KPI y la gráfica semanal Chart.js con **valores provi
 
 **Proyecto académico — Toco Madera, León, Guanajuato, México.**
 
-**Actualización documental:** 20 de noviembre de 2026 — estado verificado hasta la Etapa 3.19.6, sin declarar cerrado el proceso de liquidación y entrega final.
+**Actualización documental:** 20 de noviembre de 2026 — etapas 3.19.2–3.19.6, liquidación y respuesta de entrega verificadas; pendiente conciliación SQL final de la salida de inventario.
 
 
 ## 16. Actualización funcional de la Etapa 3.19 (20/11/2026)
 
-> **Estado del corte:** avances de producción, programación y seguimiento validados manualmente. **No se declara cerrada la Etapa 3.19 completa** hasta liquidar el saldo simulado, ejecutar la entrega y comprobar el movimiento negativo de inventario.
+> **Estado del corte:** producción, programación, seguimiento y liquidación simulada validados manualmente. La operación de entrega devolvió resultado exitoso según el desarrollador. **El cierre integral exige verificar en MySQL el movimiento `ENTREGA -1`, existencia final y prevención de doble entrega**, aún pendientes de evidencia.
 
 ### 16.1. Producción y materiales (validado)
 
@@ -785,8 +785,8 @@ El carrito pasó de una clave global compartida a claves locales por identificad
 | POST | `/admin/entregas/pedido/<id_pedido>/programar` | ADMIN | Validado |
 | POST | `/admin/entregas/pedido/<id_pedido>/listo` | ADMIN | Validado |
 | GET | `/cliente/seguimiento/mis-pedidos` | CLIENTE | Validado |
-| POST | `/admin/entregas/pedido/<id_pedido>/liquidar-saldo` | ADMIN | Implementado; **pendiente de prueba final** |
-| POST | `/admin/entregas/pedido/<id_pedido>/entregar` | ADMIN | Implementado; **pendiente de prueba final** |
+| POST | `/admin/entregas/pedido/<id_pedido>/liquidar-saldo` | ADMIN | **Prueba funcional exitosa reportada** |
+| POST | `/admin/entregas/pedido/<id_pedido>/entregar` | ADMIN | **Prueba funcional exitosa reportada** |
 
 Los módulos de esta etapa usan archivos `backend/app/routes/admin_produccion_routes.py`, `admin_producto_terminado_routes.py` y `admin_entregas_routes.py` y las tablas existentes de órdenes, consumos, lotes, movimientos, pedidos, pagos y entregas. La migración incremental de recolección se encuentra en `database/01_punto_recoleccion.sql`. No ejecutar migraciones dos veces ni borrar datos de prueba antes del respaldo.
 
@@ -799,7 +799,7 @@ Los módulos de esta etapa usan archivos `backend/app/routes/admin_produccion_ro
 5. Seis comprobaciones de interfaz **Mis pedidos** confirmadas por el desarrollador.
 6. Carrito multiusuario corregido y validado según el desarrollador.
 
-**No realizados o no confirmados al emitir este documento:** liquidación simulada del saldo restante del pedido 5, cierre a `ENTREGADO`, movimiento `ENTREGA -1`, rechazo de doble entrega, gráficas comerciales basadas en MySQL, pruebas integrales PWA y paquete final para evaluación.
+**No realizados o no confirmados al emitir este documento:** consulta SQL de estado `ENTREGADO`, movimiento `ENTREGA -1`, existencia final del lote, rechazo de doble entrega, gráficas comerciales basadas en MySQL, pruebas integrales PWA y paquete final para evaluación. **Sí realizados:** liquidación simulada por $165.00 MXN (saldo final $0.00) y respuesta exitosa de entrega reportada.
 
 ### 16.6. Próximo recorrido de demostración
 
@@ -808,7 +808,120 @@ Los módulos de esta etapa usan archivos `backend/app/routes/admin_produccion_ro
 3. Completar checkout simulado y mostrar pedido, total, anticipo y saldo en **Mis pedidos**.
 4. Consultar como ADMIN compras, materiales, inventario, recetas y orden de producción.
 5. Mostrar producto terminado, programación de entrega y aviso de recolección.
-6. **Pendiente:** ejecutar y comprobar liquidación simulada del saldo, confirmación de entrega y movimiento negativo de inventario.
+6. **Realizado:** liquidación simulada de $165.00 MXN con saldo cero y respuesta exitosa de entrega. **Pendiente:** verificar en MySQL estado, movimiento negativo y existencia del lote, y comprobar protección contra doble entrega.
 7. **Pendiente:** conectar al menos tres gráficas administrativas a consultas reales MySQL y confirmar estado PWA instalable/servicio de aplicación con compilación de producción.
 
 **Restricciones de la demostración:** se ejecuta como versión web local en la computadora del equipo; la PWA y el backend no se consideran publicados en internet. Todos los importes y cobros de la demostración son simulados.
+
+
+## 17. Corte de cierre comercial del pedido de demostración n.º 5 (20/11/2026)
+
+### 17.1. Evidencia funcional confirmada
+
+- Orden de producción **1**: rodillo de cocina personalizado; se verificó la creación del lote y la entrada de inventario de producto terminado `PRODUCCION +1`.
+- Pedido **5**: programado para recolección **2026-11-24 16:30:00**, en **Local La Calzada 202, Col. La Moderna**. Este punto se utilizó en el escenario de prueba; no debe presentarse como ubicación comercial verificada independientemente.
+- Pantalla **Mis pedidos**: seis verificaciones confirmadas; muestra artículos y pagos, aviso de estado, fecha, lugar y resumen financiero.
+- Liquidación: endpoint ADMIN `/api/v1/admin/entregas/pedido/5/liquidar-saldo` respondió `success: true`, `monto: 165.00`, `metodo: TRANSFERENCIA_SIMULADA`. La consulta posterior reportó `saldo_simulado: 0`.
+- Entrega: el desarrollador confirmó una **respuesta exitosa** del endpoint `POST /api/v1/admin/entregas/pedido/5/entregar`. El cierre fue una **simulación académica**, no prueba de recolección física; la fecha programada era futura al momento de ejecución.
+
+### 17.2. Verificación SQL del inventario terminado
+
+Ejecutar en MySQL Workbench contra la base real del proyecto (en la instalación de desarrollo se utilizó `toco_madera`):
+
+```sql
+USE toco_madera;
+
+SELECT id_pedido, estado FROM pedidos WHERE id_pedido = 5;
+SELECT id_pedido, estado, programada, entregada, receptor FROM entregas WHERE id_pedido = 5;
+SELECT mp.id_movimiento, mp.tipo, mp.cantidad_firmada, mp.id_lote
+FROM movimientos_producto AS mp
+JOIN lotes_producto AS lp ON lp.id_lote = mp.id_lote
+WHERE lp.id_orden = 1 ORDER BY mp.id_movimiento;
+SELECT mp.id_lote, SUM(mp.cantidad_firmada) AS existencia
+FROM movimientos_producto AS mp
+JOIN lotes_producto AS lp ON lp.id_lote = mp.id_lote
+WHERE lp.id_orden = 1 GROUP BY mp.id_lote;
+```
+
+**Evidencia recibida (20/11/2026):** MySQL Workbench devolvió para el lote `1` dos movimientos: `PRODUCCION +1` y `ENTREGA -1`. Esto verifica el registro de la salida y su balance neto **0**. Los resultados de `pedidos.estado`, `entregas.estado` y la protección 409 ante una segunda entrega todavía deben guardarse como evidencias adicionales; no se afirma aquí que hayan sido comprobados visualmente.
+
+### 17.3. Siguiente bloque obligatorio: estadísticas reales del dashboard
+
+**Pendiente de implementación y pruebas:** conectar por API Flask/MySQL al menos tres gráficas en Angular/Chart.js: **ventas o importe de pedidos confirmados por día**, **pedidos por estado** y **productos por unidades vendidas**. Diferenciar expresamente ventas/pedidos confirmados de **cobros simulados**. Los KPI actuales y la gráfica con números provisionales **no deben presentarse como estadísticas reales**.
+
+### 17.4. Entrega técnica pendiente
+
+Ejecutar `npx ng build`, verificar el manifiesto, service worker e instalación de la PWA en contexto seguro o localhost; mantener la demostración **web local** con Flask y MySQL activos. Crear respaldo de la base de datos, ejemplos de configuración sin secretos, evidencias del flujo y README definitivo después de las pruebas.
+
+
+## 18. Etapa 3.20.1 — Gráficas reales del dashboard (paquete preparado; pendiente de instalar y probar)
+
+Se preparó el endpoint ADMIN `GET /api/v1/dashboard/estadisticas`, utilizando `pedidos`, `pedido_detalles`, `productos` y `pagos` de MySQL. Devuelve cuatro indicadores, tres series para Chart.js y, por separado, el importe de pagos simulados aprobados. Se excluyen del cálculo de ventas los pedidos `CANCELADO` y `PENDIENTE_ANTICIPO`. **Importe de pedidos ≠ cobros bancarios reales.** Los nombres de productos se obtienen de la tabla `productos`.
+
+**Archivos:** `backend/app/routes/dashboard_routes.py`, `frontend/src/app/admin/dashboard/dashboard.ts` y `dashboard.html`. El Blueprint `dashboard_bp` ya está registrado; no duplicarlo. La creación de estadísticas es una implementación propuesta y todavía requiere ejecución de Flask, respuesta JSON real, `npx ng build`, revisión visual y validación del rol ADMIN.
+
+**Pendientes finales:** confirmar estado SQL de entrega y protección contra duplicado; validar tres gráficas con datos reales, comprobar instalación PWA en localhost, actualizar evidencia y hacer commit/push.
+
+
+---
+
+## Etapa 3.20.2 — Revisión y autorización administrativa de pedidos
+- Vista ADMIN `/admin/pedidos` con listado, detalle, filtros y decisiones.
+- Tabla `autorizaciones_pedido`: APROBADO/RECHAZADO, decisión independiente del estado comercial.
+- El usuario confirmó MySQL: pedidos #2, #3 y #4 APROBADO; #1 POR_REVISAR; #5 ENTREGADO histórico.
+- Rutas `/api/v1/admin/revision-pedidos/`, `/<int:id_pedido>` y `/decision` visibles en el mapa Flask.
+- Lista administrativa Angular visualmente verificada por captura.
+
+## Etapa 3.20.3 — Estado de autorización para CLIENTE (pendiente de validación local)
+- GET `/api/v1/cliente/pedidos/` y GET `/api/v1/cliente/pedidos/<id>` incorporan `autorizacion: { estado, fecha_decision, motivo }` para cada pedido propiedad del CLIENTE autenticado.
+- `HISTORICO_ENTREGADO` representa únicamente una entrega histórica sin registro de autorización. No crea ninguna fila ni afirma que fuera aprobada.
+- Angular `Mis pedidos` muestra explícitamente POR_REVISAR/APROBADO/RECHAZADO/HISTORICO_ENTREGADO y fechas/motivos cuando corresponda.
+- No cambian el checkout, pagos simulados, esquema MySQL, Blueprints ni entregas.
+- Requiere `autorizaciones_pedido` instalada en 3.20.2.
+- PRUEBAS PENDIENTES: compilar Angular localmente, iniciar Flask, confirmar visibilidad de autorizaciones en CLIENTE #2/#3/#4 y privacidad entre usuarios.
+
+## Siguiente etapa priorizada
+- Vista CLIENTE: revisión visual del detalle y seguimiento.
+- Seis imágenes demostrativas de productos locales.
+- PWA instalable, respaldo, README, Git y demo.
+
+
+---
+## ETAPA 3.20.4 — TALLER Y ENTREGAS: PANEL VISUAL DE OPERACIONES
+
+**Entregado para instalar, pendiente de pruebas en el equipo del desarrollador.**
+
+- Angular: ruta ADMIN protegida `/admin/operaciones`, accesible desde el dashboard y Revisión de pedidos.
+- Vista de pedidos con estados, cliente, saldo simulado, programación y autorización.
+- Operación integral del taller usando endpoints YA EXISTENTES: pendientes de fabricación, planificar, iniciar, verificar materias primas, consumir, verificar/finalizar producto terminado, programar recolección, marcar LISTO, liquidar saldo simulado, confirmar entrega.
+- Botones condicionales y confirmaciones explícitas; los permisos y las validaciones definitivas siguen en Flask y MySQL.
+- Sin modificaciones SQL ni Python. No afecta las tres gráficas reales, el checkout, el carrito ni la visibilidad de autorización y entrega en la vista del cliente.
+- Pedido #5 histórico entregado: solo lectura. Pedidos #2/#3/#4 autorizados: operables en orden según prerequisitos. Pedido #1 requiere autorización.
+- El cliente actualiza su estado en «Mis pedidos» mediante consulta; no existe notificación push.
+- Pruebas pendientes: `npx ng build` en Windows, cargar pantalla, ejecutar un flujo real con verificación de inventario/pagos, confirmar estados cliente/admin.
+- Próxima etapa: seis imágenes demostrativas de catálogo; cierre y validación instalable PWA.
+
+Ver `INSTRUCCIONES.md` y `CAMBIOS_MINIMOS.md` del paquete 3.20.4.
+
+
+## Etapa 3.20.5 — Ventas por fecha en MXN y anillo comercial (pendiente de validación en PC)
+
+- Se actualiza `backend/app/routes/dashboard_routes.py` sin agregar nuevos endpoints ni modificar tablas.
+- `GET /api/v1/dashboard/estadisticas` conserva sus contratos JSON, KPI, protección ADMIN y gráfica de productos más vendidos.
+- **Ventas por fecha:** importes (MXN) de pedidos no cancelados, calculados desde `pedido_detalles.cantidad * precio_unitario_acordado`, más envío menos descuento, agrupados por `DATE(pedidos.fecha)` en los últimos siete días; no es número de pedidos ni cobros bancarios.
+- **Anillo:** tres grupos estables: `CONFIRMADO` (también `EN_PRODUCCION` y `LISTO`), `ENTREGADO`, `CANCELADO`; `PENDIENTE_ANTICIPO` no entra al anillo. La API devuelve 0 cuando no hay registros.
+- Angular (`dashboard.ts`) muestra eje y tooltips monetarios y etiquetas de los tres estados.
+- HTML basado en la versión 3.20.4, conservando accesos a `/admin/operaciones` y `/admin/pedidos`.
+- Validación local completada: sintaxis Python, integridad del ZIP. **Pendiente:** `npx ng build` y consulta Flask contra MySQL en Windows.
+- **Siguiente etapa:** imágenes demostrativas de los seis productos, integración en catálogo/carrito/checkout/Mis pedidos; validación PWA y documentación final.
+
+
+## Etapa 3.20.7 — Imágenes de producto en checkout e historial (pendiente de validación)
+
+- Catálogo: imágenes ambientadas de los seis productos y logotipo oficial en portada (preparado en 3.20.6).
+- Carrito/configuración: imágenes limpias con grabados demostrativos (preparado en 3.20.6).
+- Mis pedidos: el backend devuelve `nombre_producto` en los detalles mediante LEFT JOIN a `productos`; Angular muestra la imagen limpia y conserva la autorización, estado de entrega, totales, saldos y pagos.
+- Checkout: colocar la imagen limpia en el listado del carrito mediante `imagenProducto(item.nombre, 'solo')`; el formulario de pagos permanece intacto.
+- Sin cambios de estructura SQL, reglas comerciales ni movimientos de almacén.
+- Validación pendiente: `python -m py_compile`, `npx ng build`, comprobación visual y pruebas con dos cuentas cliente.
+- Próxima etapa 3.21: manifest, iconos PWA, service worker, build de producción y pruebas de instalación.

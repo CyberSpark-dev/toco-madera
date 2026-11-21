@@ -88,6 +88,7 @@ def detalles_pendientes():
                 GROUP BY id_detalle_pedido
             ) op ON op.id_detalle_pedido = d.id_detalle_pedido
             WHERE d.tipo_surtido = 'FABRICACION'
+              AND EXISTS (SELECT 1 FROM autorizaciones_pedido a WHERE a.id_pedido=p.id_pedido AND a.estado='APROBADO')
               AND p.estado IN ('CONFIRMADO', 'EN_PRODUCCION')
               AND d.cantidad > COALESCE(op.planificado, 0)
             ORDER BY d.id_detalle_pedido DESC
@@ -192,7 +193,7 @@ def planificar_orden():
         # Bloquear detalle de pedido: serializa planificación concurrente para el mismo detalle.
         fila = db.session.execute(text('''
             SELECT d.id_detalle_pedido, d.id_producto, d.cantidad,
-                   d.texto_grabado, d.tipo_surtido, p.estado AS estado_pedido
+                   d.texto_grabado, d.tipo_surtido, p.estado AS estado_pedido, d.id_pedido
             FROM pedido_detalles d
             INNER JOIN pedidos p ON p.id_pedido = d.id_pedido
             WHERE d.id_detalle_pedido = :id
@@ -204,6 +205,12 @@ def planificar_orden():
         if fila['tipo_surtido'] != 'FABRICACION' or fila['estado_pedido'] not in ('CONFIRMADO', 'EN_PRODUCCION'):
             db.session.rollback()
             return jsonify(success=False, message='El pedido no está confirmado o el detalle no requiere fabricación.'), 409
+        aprobacion = db.session.execute(text('''
+            SELECT estado FROM autorizaciones_pedido WHERE id_pedido=:id
+        '''), {'id': fila['id_pedido']}).scalar_one_or_none()
+        if aprobacion != 'APROBADO':
+            db.session.rollback()
+            return jsonify(success=False, message='El pedido requiere autorizacion ADMIN antes de fabricar.'), 409
         receta = db.session.execute(text('''
             SELECT id_receta, version FROM recetas
             WHERE id_producto = :producto AND vigente = 1
@@ -250,7 +257,7 @@ def iniciar_orden(id_orden):
     try:
         _validar_admin()
         orden = db.session.execute(text('''
-            SELECT op.id_orden, op.estado, op.id_detalle_pedido, p.estado AS estado_pedido
+            SELECT op.id_orden, op.estado, op.id_detalle_pedido, p.estado AS estado_pedido, d.id_pedido
             FROM ordenes_produccion op
             LEFT JOIN pedido_detalles d ON d.id_detalle_pedido = op.id_detalle_pedido
             LEFT JOIN pedidos p ON p.id_pedido = d.id_pedido
@@ -266,6 +273,13 @@ def iniciar_orden(id_orden):
         if orden['id_detalle_pedido'] is not None and orden['estado_pedido'] not in ('CONFIRMADO', 'EN_PRODUCCION'):
             db.session.rollback()
             return jsonify(success=False, message='El pedido ya no admite producción.'), 409
+        if orden['id_pedido'] is not None:
+            aprobacion = db.session.execute(text('''
+                SELECT estado FROM autorizaciones_pedido WHERE id_pedido=:id
+            '''), {'id': orden['id_pedido']}).scalar_one_or_none()
+            if aprobacion != 'APROBADO':
+                db.session.rollback()
+                return jsonify(success=False, message='El pedido requiere autorizacion ADMIN antes de iniciar produccion.'), 409
         db.session.execute(text('''
             UPDATE ordenes_produccion
             SET estado='EN_PROCESO', fecha_inicio=COALESCE(fecha_inicio, NOW())
