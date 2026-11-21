@@ -1,15 +1,42 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="utf-8" />
-    <title>Frontend</title>
+
+    <!-- Nombre oficial de la aplicación -->
+    <title>Toco Madera | Productos artesanales de madera</title>
+
+    <!-- Ruta principal de Angular -->
     <base href="/" />
+
+    <!-- Diseño adaptable a dispositivos móviles -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Descripción de la empresa -->
+    <meta
+      name="description"
+      content="Toco Madera: productos artesanales de madera, personalizados mediante grabado manual."
+    />
+
+    <!-- ==========================================
+       ETAPA 3.21 - PWA INSTALABLE
+  ========================================== -->
+
+    <!-- Manifiesto de instalación -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Color de la interfaz en dispositivos compatibles -->
+    <meta name="theme-color" content="#4B2E1F" />
 
     <!-- Favicon oficial de Toco Madera -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Icono para dispositivos Apple compatibles -->
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
   </head>
+
   <body>
+    <!-- Componente principal de Angular -->
     <app-root></app-root>
   </body>
 </html>
