@@ -4,30 +4,23 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-3xl font-bold">Mis pedidos</h1>
       <div class="flex gap-3">
-        <a
-          routerLink="/cliente/carrito"
-          class="rounded-lg border border-[#A65A2E] px-4 py-2 font-semibold"
-          >Catálogo</a
-        >
-        <button
-          type="button"
-          (click)="cargar()"
-          [disabled]="cargando()"
-          class="rounded-lg bg-[#A65A2E] px-4 py-2 font-bold text-white disabled:opacity-50"
-        >
-          Actualizar
-        </button>
+        <a routerLink="/cliente/carrito" class="rounded-lg border border-[#A65A2E] px-4 py-2 font-semibold">Catálogo</a>
+        <button type="button" (click)="cargar()" [disabled]="cargando()"
+          class="rounded-lg bg-[#A65A2E] px-4 py-2 font-bold text-white disabled:opacity-50">Actualizar</button>
       </div>
     </div>
 
-    <p class="text-sm text-[#6B5140]">
-      Los pagos mostrados son simulados y no representan un cobro bancario real.
-    </p>
+    <p class="text-sm text-[#6B5140]">Los pagos mostrados son simulados y no representan un cobro bancario real.</p>
 
     @if (error()) {
       <div role="alert" class="rounded-lg border border-red-300 bg-red-50 p-4 text-red-800">
         {{ error() }} <a routerLink="/login" class="ml-2 font-semibold underline">Ir a login</a>
       </div>
+    }
+    @if (avisoCancelacion()) {
+      <p role="status" class="rounded-lg border border-green-300 bg-green-50 p-4 text-green-900">
+        {{ avisoCancelacion() }}
+      </p>
     }
     @if (avisoSeguimiento()) {
       <div role="status" class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900">
@@ -45,101 +38,75 @@
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
               <h2 class="break-all text-lg font-bold sm:text-xl">{{ pedido.folio }}</h2>
-              <p class="mt-1 text-sm text-gray-600">
-                {{ fechaVisible(pedido.fecha) }} · {{ pedido.seguimiento?.estado || pedido.estado }}
-              </p>
-              <p class="text-sm text-gray-600">
-                Pago:
-                {{
-                  pedido.modalidad_pago === 'ANTICIPO_50'
-                    ? '50 % de anticipo y 50 % contra entrega'
-                    : 'Pago total'
-                }}
-              </p>
+              <p class="mt-1 text-sm text-gray-600">{{ fechaVisible(pedido.fecha) }} · {{ pedido.seguimiento?.estado || pedido.estado }}</p>
+              <p class="text-sm text-gray-600">Pago: {{ pedido.modalidad_pago === 'ANTICIPO_50' ? '50 % de anticipo y 50 % contra entrega' : 'Pago total' }}</p>
             </div>
-            <span
-              class="rounded-full px-3 py-1 text-sm font-bold"
-              [class.bg-green-100]="
-                (pedido.seguimiento?.estado || pedido.estado) === 'LISTO' ||
-                (pedido.seguimiento?.estado || pedido.estado) === 'ENTREGADO'
-              "
-              [class.text-green-900]="
-                (pedido.seguimiento?.estado || pedido.estado) === 'LISTO' ||
-                (pedido.seguimiento?.estado || pedido.estado) === 'ENTREGADO'
-              "
-              [class.bg-amber-100]="
-                (pedido.seguimiento?.estado || pedido.estado) !== 'LISTO' &&
-                (pedido.seguimiento?.estado || pedido.estado) !== 'ENTREGADO'
-              "
-              [class.text-amber-900]="
-                (pedido.seguimiento?.estado || pedido.estado) !== 'LISTO' &&
-                (pedido.seguimiento?.estado || pedido.estado) !== 'ENTREGADO'
-              "
-            >
+            <span class="rounded-full px-3 py-1 text-sm font-bold"
+              [class.bg-green-100]="(pedido.seguimiento?.estado || pedido.estado) === 'LISTO' || (pedido.seguimiento?.estado || pedido.estado) === 'ENTREGADO'"
+              [class.text-green-900]="(pedido.seguimiento?.estado || pedido.estado) === 'LISTO' || (pedido.seguimiento?.estado || pedido.estado) === 'ENTREGADO'"
+              [class.bg-amber-100]="(pedido.seguimiento?.estado || pedido.estado) !== 'LISTO' && (pedido.seguimiento?.estado || pedido.estado) !== 'ENTREGADO'"
+              [class.text-amber-900]="(pedido.seguimiento?.estado || pedido.estado) !== 'LISTO' && (pedido.seguimiento?.estado || pedido.estado) !== 'ENTREGADO'">
               {{ pedido.seguimiento?.estado || pedido.estado }}
             </span>
           </div>
 
-          <!-- Etapa 3.20.3: autorización real consultada en MySQL, NO inferida del pago. -->
-          <div
-            class="rounded-lg border border-[#E3C6A9] bg-[#FFF9F2] p-4 space-y-2"
-            aria-label="Autorización administrativa"
-          >
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h3 class="font-bold">Autorización del taller</h3>
-              <span
-                class="rounded-full px-3 py-1 text-xs font-bold"
-                [class.bg-green-100]="
-                  pedido.autorizacion?.estado === 'APROBADO' ||
-                  pedido.autorizacion?.estado === 'HISTORICO_ENTREGADO'
-                "
-                [class.text-green-900]="
-                  pedido.autorizacion?.estado === 'APROBADO' ||
-                  pedido.autorizacion?.estado === 'HISTORICO_ENTREGADO'
-                "
-                [class.bg-red-100]="pedido.autorizacion?.estado === 'RECHAZADO'"
-                [class.text-red-900]="pedido.autorizacion?.estado === 'RECHAZADO'"
-                [class.bg-amber-100]="pedido.autorizacion?.estado === 'POR_REVISAR'"
-                [class.text-amber-900]="pedido.autorizacion?.estado === 'POR_REVISAR'"
-              >
-                {{ estadoAutorizacionVisible(pedido) }}
-              </span>
+          @if (pedido.estado === 'CANCELADO') {
+            <div role="status" class="rounded-lg border border-red-200 bg-red-50 p-4 text-red-900">
+              <p class="font-bold">Pedido cancelado por el cliente.</p>
+              <p class="mt-1 text-sm">No se procesan devoluciones de pagos simulados en esta demostración.
+                Los derechos legales aplicables no se ven afectados.</p>
             </div>
-            @if (pedido.autorizacion?.estado === 'APROBADO') {
-              <p class="text-sm text-green-900">
-                El taller autorizó tu pedido. Puedes seguir su fabricación y entrega en esta página.
+          } @else if (pedido.puede_cancelar) {
+            <div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p class="mb-3 text-sm text-amber-900">
+                Puedes cancelar antes de que el taller comprometa producción, inventario o entrega.
+                <strong>No habrá devolución de pagos simulados en esta demostración académica.</strong>
               </p>
-              @if (pedido.autorizacion?.fecha_decision) {
-                <p class="text-xs text-gray-600">
-                  Fecha de aprobación: {{ fechaVisible(pedido.autorizacion.fecha_decision) }}
-                </p>
-              }
-            } @else if (pedido.autorizacion?.estado === 'RECHAZADO') {
-              <p class="text-sm text-red-900">
-                El taller no autorizó la fabricación de este pedido. Contacta al administrador para
-                revisar tu situación y los pagos simulados.
-              </p>
-              @if (pedido.autorizacion?.motivo) {
-                <p class="text-sm"><strong>Motivo:</strong> {{ pedido.autorizacion.motivo }}</p>
-              }
-            } @else if (pedido.autorizacion?.estado === 'HISTORICO_ENTREGADO') {
-              <p class="text-sm text-green-900">
-                Pedido entregado antes de habilitar el módulo de autorizaciones; se conserva como
-                histórico.
-              </p>
-            } @else if (pedido.autorizacion?.estado === 'POR_REVISAR') {
-              <p class="text-sm text-amber-900">
-                El taller está revisando tu pedido. La confirmación del pago simulado no equivale a
-                la autorización de fabricación.
-              </p>
-            } @else {
-              <p class="text-sm text-gray-600">
-                La información de autorización no está disponible. Actualiza la página.
-              </p>
-            }
-          </div>
+              <button type="button" (click)="cancelarPedido(pedido)"
+                [disabled]="cancelando() !== null"
+                class="rounded-lg border border-red-700 px-4 py-2 text-sm font-bold text-red-800 hover:bg-red-50 disabled:opacity-50">
+                {{ cancelando() === pedido.id_pedido ? 'Cancelando...' : 'Cancelar mi pedido' }}
+              </button>
+            </div>
+          }
 
-          <!-- Fuente financiera: /api/v1/cliente/pedidos/ -->
+          <!-- Etapa 3.20.3: autorización real consultada en MySQL, NO inferida del pago. -->
+        @if (pedido.estado !== 'CANCELADO') {
+        <div class="rounded-lg border border-[#E3C6A9] bg-[#FFF9F2] p-4 space-y-2" aria-label="Autorización administrativa">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="font-bold">Autorización del taller</h3>
+            <span class="rounded-full px-3 py-1 text-xs font-bold"
+              [class.bg-green-100]="pedido.autorizacion?.estado === 'APROBADO' || pedido.autorizacion?.estado === 'HISTORICO_ENTREGADO'"
+              [class.text-green-900]="pedido.autorizacion?.estado === 'APROBADO' || pedido.autorizacion?.estado === 'HISTORICO_ENTREGADO'"
+              [class.bg-red-100]="pedido.autorizacion?.estado === 'RECHAZADO'"
+              [class.text-red-900]="pedido.autorizacion?.estado === 'RECHAZADO'"
+              [class.bg-amber-100]="pedido.autorizacion?.estado === 'POR_REVISAR'"
+              [class.text-amber-900]="pedido.autorizacion?.estado === 'POR_REVISAR'">
+              {{ estadoAutorizacionVisible(pedido) }}
+            </span>
+          </div>
+          @if (pedido.autorizacion?.estado === 'APROBADO') {
+            <p class="text-sm text-green-900">El taller autorizó tu pedido. Puedes seguir su fabricación y entrega en esta página.</p>
+            @if (pedido.autorizacion?.fecha_decision) {
+              <p class="text-xs text-gray-600">Fecha de aprobación: {{ fechaVisible(pedido.autorizacion.fecha_decision) }}</p>
+            }
+          } @else if (pedido.autorizacion?.estado === 'RECHAZADO') {
+            <p class="text-sm text-red-900">El taller no autorizó la fabricación de este pedido. Contacta al administrador para revisar tu situación y los pagos simulados.</p>
+            @if (pedido.autorizacion?.motivo) {
+              <p class="text-sm"><strong>Motivo:</strong> {{ pedido.autorizacion.motivo }}</p>
+            }
+          } @else if (pedido.autorizacion?.estado === 'HISTORICO_ENTREGADO') {
+            <p class="text-sm text-green-900">Pedido entregado antes de habilitar el módulo de autorizaciones; se conserva como histórico.</p>
+          } @else if (pedido.autorizacion?.estado === 'POR_REVISAR') {
+            <p class="text-sm text-amber-900">El taller está revisando tu pedido. La confirmación del pago simulado no equivale a la autorización de fabricación.</p>
+          } @else {
+            <p class="text-sm text-gray-600">La información de autorización no está disponible. Actualiza la página.</p>
+          }
+        </div>
+
+        }
+
+        <!-- Fuente financiera: /api/v1/cliente/pedidos/ -->
           @if (pedido.resumen) {
             <div class="grid gap-3 sm:grid-cols-3" aria-label="Resumen financiero del pedido">
               <div class="rounded-lg bg-[#FFF9F2] p-4">
@@ -150,56 +117,33 @@
                 <p class="text-sm text-gray-600">Pagado (simulado)</p>
                 <p class="text-xl font-bold text-green-800">{{ dinero(pedido.resumen.pagado) }}</p>
               </div>
-              <div
-                class="rounded-lg border p-4"
-                [class.border-orange-300]="saldoPendiente(pedido)"
-                [class.bg-orange-50]="saldoPendiente(pedido)"
-                [class.border-green-300]="!saldoPendiente(pedido)"
-                [class.bg-green-50]="!saldoPendiente(pedido)"
-              >
-                <p class="text-sm">
-                  {{ saldoPendiente(pedido) ? 'Saldo por pagar' : 'Saldo pendiente' }}
-                </p>
-                <p
-                  class="text-xl font-bold"
-                  [class.text-orange-900]="saldoPendiente(pedido)"
-                  [class.text-green-800]="!saldoPendiente(pedido)"
-                >
-                  {{ dinero(pedido.resumen.saldo) }}
-                </p>
-                <p class="text-xs">
-                  {{
-                    saldoPendiente(pedido)
-                      ? 'Liquidación simulada contra entrega'
-                      : 'Sin saldo pendiente'
-                  }}
-                </p>
+              <div class="rounded-lg border p-4" [class.border-orange-300]="saldoPendiente(pedido)"
+                   [class.bg-orange-50]="saldoPendiente(pedido)"
+                   [class.border-green-300]="!saldoPendiente(pedido)"
+                   [class.bg-green-50]="!saldoPendiente(pedido)">
+                <p class="text-sm">{{ pedido.estado === 'CANCELADO' ? 'Saldo histórico (sin cobro)' : (saldoPendiente(pedido) ? 'Saldo por pagar' : 'Saldo pendiente') }}</p>
+                <p class="text-xl font-bold" [class.text-orange-900]="saldoPendiente(pedido)"
+                  [class.text-green-800]="!saldoPendiente(pedido)">{{ dinero(pedido.resumen.saldo) }}</p>
+                <p class="text-xs">{{ pedido.estado === 'CANCELADO' ? 'Pedido cancelado; no solicitar pago pendiente' : (saldoPendiente(pedido) ? 'Liquidación simulada contra entrega' : 'Sin saldo pendiente') }}</p>
               </div>
             </div>
           } @else {
             <p role="status" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-              El resumen financiero no está disponible. Consulta con el taller antes de realizar
-              cualquier pago.
+              El resumen financiero no está disponible. Consulta con el taller antes de realizar cualquier pago.
             </p>
           }
 
           <!-- Fuente logística: /api/v1/cliente/seguimiento/mis-pedidos -->
-          @if (pedido.seguimiento; as seguimiento) {
+          @if (pedido.estado === 'CANCELADO') {
+            <p class="text-sm text-gray-600">El seguimiento y la programación de entrega finalizaron al cancelar el pedido.</p>
+          } @else if (pedido.seguimiento; as seguimiento) {
             <div class="rounded-lg border border-[#E3C6A9] bg-[#FFF9F2] p-4 space-y-2">
               @if (seguimiento.estado === 'LISTO') {
-                <p role="status" class="font-bold text-green-800">
-                  Tu pedido está listo para recoger.
-                </p>
+                <p role="status" class="font-bold text-green-800">Tu pedido está listo para recoger.</p>
               }
-
-              <!-- ============================================= -->
-              <!-- ESTADO DE ENTREGA DEL PEDIDO -->
-              <!-- Etapa 3.20.3.1 -->
-              <!-- ============================================= -->
-
+              <!-- Estado de entrega explícito (Etapa 3.20.3.1). -->
               <div class="rounded-lg border border-[#D8B89A] bg-white p-4">
                 <p class="text-sm font-semibold text-[#6B5140]">Estado de entrega</p>
-
                 <p class="mt-1 text-lg font-bold text-[#4B2E1F]">
                   @if (seguimiento.estado === 'ENTREGADO') {
                     Entregado
@@ -211,45 +155,21 @@
                     Pendiente de programación
                   }
                 </p>
-
                 @if (seguimiento.estado === 'LISTO') {
-                  <p class="mt-2 text-sm text-green-800">
-                    Tu pedido está preparado. Consulta la fecha y el punto de recolección indicados.
-                  </p>
+                  <p class="mt-2 text-sm text-green-800">Tu pedido está preparado. Consulta su fecha y punto de recolección.</p>
                 }
-
                 @if (seguimiento.estado === 'ENTREGADO') {
-                  <p class="mt-2 text-sm text-green-800">
-                    El taller ha confirmado la entrega de tu pedido.
-                  </p>
+                  <p class="mt-2 text-sm text-green-800">El taller ha confirmado la entrega de tu pedido.</p>
                 }
               </div>
-
               <p class="text-sm">{{ seguimiento.aviso }}</p>
-              <p class="text-sm">
-                <strong>Tipo de entrega:</strong>
-                {{
-                  seguimiento.tipo_entrega === 'RECOLECCION'
-                    ? 'Recolección'
-                    : seguimiento.tipo_entrega
-                }}
-              </p>
+              <p class="text-sm"><strong>Tipo de entrega:</strong> {{ seguimiento.tipo_entrega === 'RECOLECCION' ? 'Recolección' : seguimiento.tipo_entrega }}</p>
               @if (seguimiento.estado === 'ENTREGADO') {
-                <p class="text-sm">
-                  <strong>Entregado:</strong> {{ fechaVisible(seguimiento.entregada) }}
-                </p>
+                <p class="text-sm"><strong>Entregado:</strong> {{ fechaVisible(seguimiento.entregada) }}</p>
               } @else {
-                <p class="text-sm">
-                  <strong>Fecha de entrega:</strong>
-                  {{ fechaVisible(seguimiento.programada || seguimiento.fecha_entrega_prometida) }}
-                </p>
-                <p class="text-sm">
-                  <strong>Lugar de recolección:</strong>
-                  {{ seguimiento.punto_recoleccion || 'Pendiente de confirmación del taller' }}
-                </p>
-                <p class="text-sm">
-                  <strong>Plazo orientativo:</strong> {{ seguimiento.plazo_orientativo }}
-                </p>
+                <p class="text-sm"><strong>Fecha de entrega:</strong> {{ fechaVisible(seguimiento.programada || seguimiento.fecha_entrega_prometida) }}</p>
+                <p class="text-sm"><strong>Lugar de recolección:</strong> {{ seguimiento.punto_recoleccion || 'Pendiente de confirmación del taller' }}</p>
+                <p class="text-sm"><strong>Plazo orientativo:</strong> {{ seguimiento.plazo_orientativo }}</p>
               }
             </div>
           } @else {
@@ -258,23 +178,24 @@
 
           <!-- Se mantienen intactos el detalle de artículos y los pagos individuales. -->
           <details class="rounded-lg border border-gray-200 p-3">
-            <summary class="cursor-pointer font-semibold text-[#A65A2E]">
-              Ver artículos y pagos
-            </summary>
+            <summary class="cursor-pointer font-semibold text-[#A65A2E]">Ver artículos y pagos</summary>
             <div class="mt-4 space-y-2">
               @for (item of pedido.detalles; track item.id_detalle_pedido) {
-                <div class="rounded-lg bg-[#FFF9F2] p-3 text-sm">
-                  Producto #{{ item.id_producto }} · Cantidad: {{ item.cantidad }} · Precio:
-                  {{ dinero(item.precio_unitario_acordado) }}
-                  @if (item.texto_grabado) {
-                    <p>Grabado: {{ item.texto_grabado }}</p>
+                <div class="flex flex-col gap-3 rounded-lg bg-[#FFF9F2] p-3 text-sm sm:flex-row sm:items-center">
+                  @if (imagenProducto(item.nombre_producto, 'solo'); as foto) {
+                    <img [src]="foto" [alt]="'Vista demostrativa de ' + item.nombre_producto"
+                      class="h-28 w-full rounded-lg bg-white object-contain sm:w-32" loading="lazy" />
                   }
+                  <div class="min-w-0 flex-1">
+                    <p class="font-bold">{{ item.nombre_producto || ('Producto #' + item.id_producto) }}</p>
+                    <p>Cantidad: {{ item.cantidad }} · Precio unitario: {{ dinero(item.precio_unitario_acordado) }}</p>
+                    @if (item.texto_grabado) { <p>Grabado solicitado: <strong>{{ item.texto_grabado }}</strong></p> }
+                    <p class="mt-1 text-xs text-gray-500">Imagen de muestra; el grabado solicitado puede ser diferente.</p>
+                  </div>
                 </div>
               }
               @for (pago of pedido.pagos; track pago.id_pago) {
-                <p class="text-sm">
-                  Pago {{ pago.estado }}: {{ dinero(pago.monto) }} · {{ pago.metodo }}
-                </p>
+                <p class="text-sm">Pago {{ pago.estado }}: {{ dinero(pago.monto) }} · {{ pago.metodo }}</p>
               }
             </div>
           </details>

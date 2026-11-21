@@ -1,0 +1,22 @@
+<main class="min-h-screen bg-crema px-5 py-10 text-nogal">
+  <div class="mx-auto max-w-3xl space-y-6">
+    <div class="flex flex-wrap items-center justify-between gap-3"><h1 class="text-3xl font-bold">Mi cuenta</h1><a routerLink="/" class="rounded-lg border border-terracota px-4 py-2 font-semibold">Volver a la tienda</a></div>
+    @if (error()) { <p role="alert" class="rounded-lg bg-red-50 p-4 text-red-800">{{ error() }}</p> }
+    @if (aviso()) { <p role="status" class="rounded-lg bg-green-50 p-4 text-green-800">{{ aviso() }}</p> }
+    <form (ngSubmit)="guardarDatos()" class="space-y-4 rounded-xl bg-white p-6 shadow-sm">
+      <h2 class="text-xl font-bold">Mis datos personales</h2>
+      <label class="block font-semibold">Nombre<input name="nombre" [(ngModel)]="datos.nombre" required minlength="2" maxlength="120" class="mt-2 w-full rounded-lg border border-gray-300 p-3" /></label>
+      <label class="block font-semibold">Correo electrónico<input name="correo" type="email" [(ngModel)]="datos.correo" required maxlength="190" class="mt-2 w-full rounded-lg border border-gray-300 p-3" /></label>
+      <label class="block font-semibold">Teléfono (10 dígitos)<input name="telefono" inputmode="numeric" [(ngModel)]="datos.telefono" pattern="[0-9]{10}" maxlength="10" required class="mt-2 w-full rounded-lg border border-gray-300 p-3" /></label>
+      <button type="submit" [disabled]="guardando()" class="rounded-lg bg-terracota px-5 py-3 font-bold text-white disabled:opacity-50">Guardar cambios</button>
+    </form>
+    <form (ngSubmit)="guardarPassword()" class="space-y-4 rounded-xl bg-white p-6 shadow-sm">
+      <h2 class="text-xl font-bold">Cambiar contraseña</h2>
+      <p class="text-sm text-gray-600">La nueva contraseña debe tener al menos 10 caracteres, letras y números. Al guardar se cerrará tu sesión actual.</p>
+      <label class="block font-semibold">Contraseña actual<input name="actual" type="password" autocomplete="current-password" [(ngModel)]="actual" required class="mt-2 w-full rounded-lg border border-gray-300 p-3" /></label>
+      <label class="block font-semibold">Nueva contraseña<input name="nueva" type="password" autocomplete="new-password" [(ngModel)]="nueva" required minlength="10" maxlength="128" class="mt-2 w-full rounded-lg border border-gray-300 p-3" /></label>
+      <label class="block font-semibold">Confirmar nueva contraseña<input name="confirmar" type="password" autocomplete="new-password" [(ngModel)]="confirmarNueva" required minlength="10" maxlength="128" class="mt-2 w-full rounded-lg border border-gray-300 p-3" /></label>
+      <button type="submit" [disabled]="guardando()" class="rounded-lg bg-nogal px-5 py-3 font-bold text-white disabled:opacity-50">Actualizar contraseña</button>
+    </form>
+  </div>
+</main>

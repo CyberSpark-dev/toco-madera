@@ -83,6 +83,8 @@ from app.routes.producto_routes import productos_bp
 
 # Registro, inicio de sesión y consulta del perfil.
 from app.routes.auth_routes import auth_bp
+from app.routes.admin_cliente_routes import admin_clientes_bp
+from app.routes.perfil_routes import perfil_bp
 
 
 # ------------------------------------------------------------
@@ -296,6 +298,8 @@ def create_app():
 
     # Registro de clientes, login y perfil.
     app.register_blueprint(auth_bp)
+    app.register_blueprint(admin_clientes_bp)
+    app.register_blueprint(perfil_bp)
 
 
     # --------------------------------------------------------

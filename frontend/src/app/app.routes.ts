@@ -203,6 +203,12 @@ export const routes: Routes = [
     loadComponent: () => import('./admin/operaciones/operaciones').then((m) => m.OperacionesAdmin),
   },
 
+  // ETAPA 3.20.8: administración de clientes y perfil.
+  { path:'admin/clientes', title:'Toco Madera | Clientes', canActivate:[adminGuard],
+    loadComponent:()=>import('./admin/clientes/clientes').then(m=>m.ClientesAdmin) },
+  { path:'cliente/mi-cuenta', title:'Toco Madera | Mi cuenta',
+    loadComponent:()=>import('./cliente/mi-cuenta/mi-cuenta').then(m=>m.MiCuenta) },
+
   // ====================================================
   // 6. RUTA DESCONOCIDA
   // ====================================================

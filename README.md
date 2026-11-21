@@ -925,3 +925,94 @@ Ver `INSTRUCCIONES.md` y `CAMBIOS_MINIMOS.md` del paquete 3.20.4.
 - Sin cambios de estructura SQL, reglas comerciales ni movimientos de almacén.
 - Validación pendiente: `python -m py_compile`, `npx ng build`, comprobación visual y pruebas con dos cuentas cliente.
 - Próxima etapa 3.21: manifest, iconos PWA, service worker, build de producción y pruebas de instalación.
+
+
+---
+
+## Etapa 3.20.8 — Gestión de clientes y perfil de usuario
+
+### Funcionalidades incorporadas
+- Administrador: acceso desde Dashboard a **Gestionar clientes** (`/admin/clientes`); lista de cuentas CLIENTE, búsqueda, datos públicos, total histórico de pedidos confirmados, cinco productos más comprados, edición de nombre/correo/teléfono, desactivación y reactivación lógica.
+- Cliente autenticado: enlace **Mi cuenta** en la página principal (`/cliente/mi-cuenta`); edición de nombre/correo/teléfono; cambio de contraseña validando la contraseña actual.
+- No se eliminan filas en `usuarios` ni pedidos. Al desactivar una cuenta se conserva el historial. No se cambian roles ni contraseñas de clientes desde administración.
+
+### API añadida
+- `GET /api/v1/admin/clientes/` — solo ADMIN
+- `GET /api/v1/admin/clientes/<id>` — solo ADMIN
+- `PATCH /api/v1/admin/clientes/<id>` — solo ADMIN
+- `PATCH /api/v1/admin/clientes/<id>/estado` — solo ADMIN; `{"activo":false}`
+- `GET /api/v1/perfil/` — JWT del propietario
+- `PATCH /api/v1/perfil/` — JWT del propietario
+- `POST /api/v1/perfil/password` — JWT del propietario y contraseña actual.
+
+### Medición comercial
+Total de compras: suma `pedido_detalles.cantidad * precio_unitario_acordado` más envío menos descuentos una sola vez por pedido, únicamente en estados `CONFIRMADO`, `EN_PRODUCCION`, `LISTO` y `ENTREGADO`. No corresponde a dinero efectivamente cobrado. Productos más comprados: unidades de esos mismos pedidos, máximo cinco productos.
+
+### Seguridad y restricciones
+- El servidor verifica JWT y rol ADMIN en cada acción administrativa.
+- Las contraseñas se guardan con el mecanismo de hash existente de `Usuario.establecer_password`.
+- El cliente debe proporcionar la contraseña actual; la nueva contraseña debe tener 10–128 caracteres y contener letras y números.
+- El frontend cierra la sesión actual al cambiar contraseña. **Importante:** los JWT previamente emitidos en otras sesiones NO se revocan automáticamente con esta implementación; siguen siendo válidos hasta expirar, salvo cuentas desactivadas donde el endpoint compruebe su estado. Para revocación global hace falta token blocklist o versión de sesión.
+- No se realiza migración de base de datos. Requiere esquema ya existente de `usuarios`, `roles`, `pedidos`, `pedido_detalles` y `productos`.
+
+### Validación rápida
+1. Reiniciar Flask y compilar `npx ng build` desde `frontend`.
+2. Iniciar sesión como ADMIN y verificar `/admin/clientes`; editar un cliente de prueba.
+3. Desactivar y reactivar una cuenta de prueba; comprobar que el historial no desaparece.
+4. Iniciar sesión como CLIENTE y modificar nombre/teléfono; comprobar `/api/v1/auth/me`.
+5. Cambiar contraseña con contraseña actual; comprobar regreso a login y acceso con contraseña nueva.
+6. Probar permisos: un CLIENTE no puede usar `/api/v1/admin/clientes/` (HTTP 403).
+
+La etapa 3.21 PWA permanece **pendiente de instalación/pruebas**; esta etapa no modifica su configuración.
+
+---
+
+## Etapa 3.21 — PWA instalable (configuración entregada; pruebas locales pendientes)
+
+**Punto de partida:** código auditado en `Toco_Madera_Proyecto_Limpio_Revision_3_21.zip`. Los archivos de esta etapa son una **actualización parcial** para aplicar sobre el repositorio local ya respaldado en GitHub; no reemplazar toda la carpeta.
+
+### Infraestructura PWA
+
+- Frontend Angular 22.2.0, TypeScript, Tailwind CSS 4, Flowbite y Chart.js (dashboard). Backend Flask con JWT por rol; MySQL 8.
+- `frontend/public/manifest.webmanifest`: nombre Toco Madera, alcance `/`, `display: standalone`, colores crema `#F9E9D5` y nogal `#4B2E1F`.
+- `frontend/public/icons/`: iconos oficiales 192 × 192, 512 × 512 y 512 × 512 maskable a partir de `logo-icono.png`.
+- `frontend/src/index.html`: referencias al manifest, icono Apple, `theme-color`, título, metadatos y español.
+- `frontend/src/app/app.config.ts`: `provideServiceWorker` registrado solo fuera del modo desarrollo.
+- `frontend/angular.json`: habilita el worker de Angular en la configuración **production** mediante `serviceWorker: "ngsw-config.json"`.
+- `frontend/ngsw-config.json`: guarda en caché el shell y los recursos estáticos; imágenes del catálogo bajo demanda. **No se almacenan respuestas de la API REST privada**, ni JWT, pagos, pedidos, datos personales ni operaciones de ADMIN.
+- `frontend/package.json`: agrega `@angular/service-worker` de la misma versión mayor que Angular. Se actualiza `package-lock.json` **mediante `npm install` en el equipo local**, no reemplazarlo sin instalar.
+
+### Instrucciones verificables para Windows
+
+1. En la raíz `toco-madera`, respaldar los 5 archivos que se reemplazan y copiar la carpeta `frontend/` del ZIP de Etapa 3.21. Conservar `backend/`, `database/`, el `.env` local y `.git`.
+2. `cd frontend`; `npm install`; `npx ng build --configuration production`. Validar `dist/frontend/browser/ngsw-worker.js`, `dist/frontend/browser/ngsw.json`, `dist/frontend/browser/manifest.webmanifest`.
+3. Detener `ng serve` con Ctrl+C; iniciar **servidor estático para la compilación de producción** en el puerto 4200: `npx --yes serve@14 -s dist/frontend/browser -l 4200`. El puerto 4200 coincide con CORS del backend existente. Mantener Flask en `127.0.0.1:5000` y MySQL activos para las operaciones.
+4. Abrir `http://localhost:4200` (localhost es contexto seguro para service workers); Chrome DevTools → Application → Manifest / Service Workers: validar manifiesto, iconos y worker activado. Usar menú del navegador `Instalar Toco Madera` si aparece.
+5. Offline solo significa que pueden abrirse **archivos ya cacheados**. Catálogo remoto, login, checkout, órdenes, pagos simulados y entregas **requieren Flask/MySQL y conexión**; mostrar error o estado de conexión, no simular guardado exitoso fuera de línea.
+6. Probar login ADMIN/CLIENTE, catálogo con fotos ambientadas, fotos limpias en carrito/checkout/Mis pedidos, tres gráficas del dashboard según última versión que el usuario decidió conservar, autorizaciones y entregas. **Sin crear nuevos pedidos de demostración ni movimientos de inventario innecesarios.**
+7. `git status`; revisar secretos; `git add frontend/angular.json frontend/package.json frontend/package-lock.json frontend/ngsw-config.json frontend/src/index.html frontend/src/app/app.config.ts frontend/public/manifest.webmanifest frontend/public/icons README.md`; commit + push en rama existente.
+
+### Condiciones y advertencias de entrega
+
+- **PWA ≠ backend offline**: no existe sincronización diferida de operaciones ni almacenamiento fuera de línea de información privada.
+- El build local Angular, registro real del service worker, instalación y pruebas de usuario en Chrome **siguen pendientes de confirmación**.
+- `ng serve` con configuración de desarrollo **no verifica la instalación PWA**: probar `dist` con servidor HTTP local.
+- La app Angular solicita a `http://127.0.0.1:5000`; en otra computadora/teléfono ese host designa el propio dispositivo, no el PC servidor. Para una demostración móvil real harían falta URL accesibles y HTTPS, además de ajustar CORS y configuración de API.
+- `README.md` documenta el estado del código, no sustituye exportación SQL ni respaldo MySQL; contraseñas y tokens fuera de Git.
+- A petición del usuario, **se conservaron los diseños de las gráficas previos a la propuesta 3.20.5**. No se deben reintroducir cambios al dashboard durante esta etapa.
+
+
+### Corrección posterior de Etapa 3.20.8
+
+Se registraron `admin_clientes_bp` y `perfil_bp` en `backend/app/__init__.py`; el usuario confirmó que las pantallas funcionan. Pendiente verificar con operaciones reales de edición, cambio de contraseña y baja lógica, y realizar las pruebas integrales en Windows.
+
+
+## Validación de alta de cliente — Etapa 3.20.8 (ajuste final)
+
+- Nombre completo obligatorio, entre 2 y 120 caracteres.
+- Correo electrónico obligatorio, con formato válido y único.
+- Teléfono obligatorio de 10 dígitos.
+- Contraseña requerida y confirmación coincidente.
+- El formulario Angular impide enviar datos incompletos y muestra mensajes junto a nombre, correo y teléfono.
+- El backend existente (`AuthService.registrar_cliente`) ya valida nombre, correo, teléfono y contraseña; no se requieren cambios de MySQL.
+- La instalación PWA corresponde a la Etapa 3.21, todavía pendiente de comprobar en Windows.

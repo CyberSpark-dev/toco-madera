@@ -22,6 +22,7 @@ export interface PedidoCliente {
   fecha: string;
   estado: string;
   modalidad_pago: ModalidadPago;
+  puede_cancelar?: boolean;
   /** Decisión ADMIN independiente del estado comercial del pedido. */
   autorizacion: {
     estado: 'POR_REVISAR' | 'APROBADO' | 'RECHAZADO' | 'HISTORICO_ENTREGADO';
@@ -89,6 +90,13 @@ export class ClientePedidosService {
   /** Conserva el checkout existente. */
   confirmar(datos: ConfirmacionCheckout): Observable<PedidoRespuesta> {
     return this.http.post<PedidoRespuesta>(this.url, datos);
+  }
+
+  /** Cancelación del pedido propio: conserva pagos simulados e historial. */
+  cancelar(id: number): Observable<{ success: boolean; message: string; estado: string }> {
+    return this.http.post<{ success: boolean; message: string; estado: string }>(
+      `${this.url}${id}/cancelar`, { acepta_condiciones: true }
+    );
   }
 
   /** Historial con artículos, pagos y resumen financiero. */

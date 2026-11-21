@@ -1,6 +1,6 @@
 <!-- ==========================================
      TOCO MADERA - REGISTRO DE CLIENTES
-     Teléfono obligatorio para cuentas nuevas.
+     Nombre, correo y teléfono obligatorios para cuentas nuevas.
 ========================================== -->
 <div class="min-h-screen bg-crema">
   <!-- ENCABEZADO -->
@@ -28,28 +28,52 @@
         </div>
       }
 
+      <p class="mb-4 text-xs text-gray-600"><span class="font-semibold text-red-600">*</span> Campos obligatorios.</p>
+
       <!-- FORMULARIO DE REGISTRO -->
       <form #formRegistro="ngForm" (ngSubmit)="registrarCliente()" class="space-y-5">
-        <!-- NOMBRE -->
+        <!-- NOMBRE OBLIGATORIO -->
         <div>
-          <label for="nombre" class="mb-2 block text-sm font-medium text-nogal">Nombre completo</label>
+          <label for="nombre" class="mb-2 block text-sm font-medium text-nogal">Nombre completo <span class="text-red-600" aria-hidden="true">*</span></label>
           <input
             id="nombre" name="nombre" type="text" [(ngModel)]="nombre"
+            #nombreControl="ngModel"
             required minlength="2" maxlength="120" autocomplete="name"
             placeholder="Tu nombre completo"
+            [attr.aria-invalid]="nombreControl.invalid && nombreControl.touched ? 'true' : null"
             class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm text-gray-900 focus:border-terracota focus:ring-terracota"
           />
+          @if (nombreControl.invalid && (nombreControl.touched || nombreControl.dirty)) {
+            <p role="alert" class="mt-2 text-sm font-medium text-red-700">
+              @if (nombreControl.errors?.['required']) {
+                El nombre es obligatorio.
+              } @else {
+                El nombre debe tener entre 2 y 120 caracteres.
+              }
+            </p>
+          }
         </div>
 
-        <!-- CORREO ELECTRÓNICO -->
+        <!-- CORREO ELECTRÓNICO OBLIGATORIO -->
         <div>
-          <label for="correoRegistro" class="mb-2 block text-sm font-medium text-nogal">Correo electrónico</label>
+          <label for="correoRegistro" class="mb-2 block text-sm font-medium text-nogal">Correo electrónico <span class="text-red-600" aria-hidden="true">*</span></label>
           <input
             id="correoRegistro" name="correo" type="email" [(ngModel)]="correo"
+            #correoControl="ngModel"
             required email maxlength="190" autocomplete="email"
             placeholder="correo@ejemplo.com"
+            [attr.aria-invalid]="correoControl.invalid && correoControl.touched ? 'true' : null"
             class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm text-gray-900 focus:border-terracota focus:ring-terracota"
           />
+          @if (correoControl.invalid && (correoControl.touched || correoControl.dirty)) {
+            <p role="alert" class="mt-2 text-sm font-medium text-red-700">
+              @if (correoControl.errors?.['required']) {
+                El correo electrónico es obligatorio.
+              } @else {
+                Ingresa un correo electrónico válido.
+              }
+            </p>
+          }
         </div>
 
         <!-- TELÉFONO OBLIGATORIO -->

@@ -1,6 +1,7 @@
 /** Toco Madera | Etapa 3.19.6 - Mis pedidos, pago simulado y seguimiento. */
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { imagenProducto } from '../../core/utils/imagenes-productos';
 import { HttpErrorResponse } from '@angular/common/http';
 import { catchError, forkJoin, of } from 'rxjs';
 import {
@@ -18,11 +19,14 @@ import {
 })
 export class MisPedidosCliente implements OnInit {
   private readonly api = inject(ClientePedidosService);
+  readonly imagenProducto = imagenProducto;
 
   readonly pedidos = signal<PedidoClienteConSeguimiento[]>([]);
   readonly cargando = signal(true);
   readonly error = signal('');
   readonly avisoSeguimiento = signal('');
+  readonly cancelando = signal<number | null>(null);
+  readonly avisoCancelacion = signal('');
 
   ngOnInit(): void {
     this.cargar();
@@ -66,6 +70,36 @@ export class MisPedidosCliente implements OnInit {
             : typeof e.error?.message === 'string'
               ? e.error.message
               : 'No pudimos consultar tus pedidos.');
+      }
+    });
+  }
+
+  /**
+   * El servidor verifica de nuevo: propiedad del pedido, estado y ausencia
+   * de producción, entregas o reservas. No confiar únicamente en el botón.
+   */
+  cancelarPedido(pedido: PedidoClienteConSeguimiento): void {
+    if (!pedido.puede_cancelar || this.cancelando() !== null) return;
+    const aceptado = window.confirm(
+      `¿Cancelar el pedido ${pedido.folio}?\n\n` +
+      'AVISO: no habrá devolución de pagos simulados en esta demostración académica. ' +
+      'Los derechos que correspondan conforme a la ley no se ven afectados.\n\n' +
+      'Esta acción no se puede deshacer desde la aplicación.'
+    );
+    if (!aceptado) return;
+    this.cancelando.set(pedido.id_pedido);
+    this.error.set('');
+    this.avisoCancelacion.set('');
+    this.api.cancelar(pedido.id_pedido).subscribe({
+      next: respuesta => {
+        this.cancelando.set(null);
+        this.avisoCancelacion.set(respuesta.message);
+        this.cargar();
+      },
+      error: (e: HttpErrorResponse) => {
+        this.cancelando.set(null);
+        this.error.set(typeof e.error?.message === 'string'
+          ? e.error.message : 'No se pudo cancelar. Actualiza tus pedidos e inténtalo nuevamente.');
       }
     });
   }

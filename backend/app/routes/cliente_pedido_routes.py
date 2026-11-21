@@ -179,6 +179,17 @@ def obtener_pedido(tablas, id_pedido, id_cliente):
         'pagos': [fila_json(row) for row in filas_pago],
         'resumen': fila_json(saldo) if saldo is not None else None,
         'autorizacion': autorizacion,
+        'puede_cancelar': pedido['estado'] == 'CONFIRMADO' and not bool(db.session.execute(text('''
+            SELECT (
+              EXISTS (SELECT 1 FROM ordenes_produccion op
+                      JOIN pedido_detalles d ON d.id_detalle_pedido = op.id_detalle_pedido
+                      WHERE d.id_pedido = :id)
+              OR EXISTS (SELECT 1 FROM entregas e WHERE e.id_pedido = :id)
+              OR EXISTS (SELECT 1 FROM reservas_producto rp
+                         JOIN pedido_detalles d ON d.id_detalle_pedido = rp.id_detalle_pedido
+                         WHERE d.id_pedido = :id AND rp.estado = 'ACTIVA')
+            )
+        '''), {'id': id_pedido}).scalar()),
     }
 
 
@@ -304,3 +315,63 @@ def confirmar_checkout():
         db.session.rollback()
         current_app.logger.exception('Error SQLAlchemy al confirmar pedido')
         return jsonify(success=False, message='Error interno al registrar pedido; revisa el log Flask.'), 500
+
+
+@cliente_pedidos_bp.post('/<int:id_pedido>/cancelar')
+@jwt_required()
+def cancelar_mi_pedido(id_pedido):
+    # Cancelar pedido propio aún no comprometido con producción o entrega.
+    datos = request.get_json(silent=True)
+    if not isinstance(datos, dict) or datos.get('acepta_condiciones') is not True:
+        return jsonify(success=False, message='Confirma que comprendes las condiciones de cancelación de esta demostración.'), 400
+    try:
+        t = cargar_tablas()
+        id_cliente = obtener_cliente(t)
+        # Bloquear el pedido antes de validar el estado. El módulo ADMIN usa
+        # el mismo bloqueo al autorizar, lo que evita una carrera concurrente.
+        pedido = db.session.execute(text('''
+            SELECT id_pedido, id_cliente, estado FROM pedidos
+            WHERE id_pedido=:id FOR UPDATE
+        '''), {'id': id_pedido}).mappings().first()
+        if not pedido or int(pedido['id_cliente']) != id_cliente:
+            db.session.rollback()
+            return jsonify(success=False, message='Pedido no encontrado.'), 404
+        if pedido['estado'] == 'CANCELADO':
+            db.session.rollback()
+            return jsonify(success=False, message='El pedido ya está cancelado.'), 409
+        if pedido['estado'] != 'CONFIRMADO':
+            db.session.rollback()
+            return jsonify(success=False, message='Este pedido ya no admite cancelación automática. Comunícate con el taller.'), 409
+
+        # Incluso una orden PLANIFICADA cuenta como trabajo comprometido.
+        tiene_produccion = db.session.execute(text('''
+            SELECT COUNT(*) FROM ordenes_produccion op
+            JOIN pedido_detalles d ON d.id_detalle_pedido=op.id_detalle_pedido
+            WHERE d.id_pedido=:id
+        '''), {'id': id_pedido}).scalar_one()
+        tiene_entrega = db.session.execute(text('''
+            SELECT COUNT(*) FROM entregas WHERE id_pedido=:id
+        '''), {'id': id_pedido}).scalar_one()
+        tiene_reservas = db.session.execute(text('''
+            SELECT COUNT(*) FROM reservas_producto rp
+            JOIN pedido_detalles d ON d.id_detalle_pedido=rp.id_detalle_pedido
+            WHERE d.id_pedido=:id AND rp.estado='ACTIVA'
+        '''), {'id': id_pedido}).scalar_one()
+        if tiene_produccion or tiene_entrega or tiene_reservas:
+            db.session.rollback()
+            return jsonify(success=False, message='El pedido ya tiene producción, entrega o inventario reservado. Solicita atención al taller.'), 409
+
+        db.session.execute(text('''
+            UPDATE pedidos SET estado='CANCELADO'
+            WHERE id_pedido=:id AND id_cliente=:cliente AND estado='CONFIRMADO'
+        '''), {'id': id_pedido, 'cliente': id_cliente})
+        db.session.commit()
+        return jsonify(success=True, id_pedido=id_pedido, estado='CANCELADO',
+                       message='Pedido cancelado. Los pagos ficticios permanecen registrados; no se procesan devoluciones en esta simulación.'), 200
+    except PermissionError as ex:
+        db.session.rollback()
+        return jsonify(success=False, message=str(ex)), 403
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.exception('Error al cancelar pedido del cliente')
+        return jsonify(success=False, message='No fue posible cancelar el pedido. Intenta nuevamente.'), 500
