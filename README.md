@@ -227,9 +227,9 @@ La base usada en desarrollo se llama `toco_madera`. Para migrar a otro equipo, p
 
 ## Autor
 
-**Angel Torres**
-**Braulio Ríos**
-**Arturo Landeros**
+**Angel Torres**, 
+**Braulio Ríos**,
+**Arturo Landeros**,
 **Emiliano Barajas**
 
 ---
