@@ -1,10 +1,10 @@
-# Toco Madera — PWA v1.0
+# Toco Madera — PWA v1.1
 
 > **Frases que vienen de raíz y se graban en el corazón.**
 
 **Toco Madera** es una aplicación web progresiva (PWA) académica para la gestión de una empresa que transforma materia prima de madera en artículos artesanales personalizables. El proyecto fue desarrollado para una demostración local en **León, Guanajuato, México**, con interfaces de **cliente** y **administrador**.
 
-**Versión de entrega:** `v1.0` · **Fecha:** 21 de noviembre de 2026 · **Repositorio principal:** https://github.com/CyberSpark-dev/toco-madera
+**Versión de entrega:** `v1.1` · **Fecha:** 21 de noviembre de 2026 · **Repositorio principal:** https://github.com/CyberSpark-dev/toco-madera
 
 > **Estado:** la instalación de la PWA desde Chrome fue confirmada durante las pruebas manuales. La aplicación está orientada a una demostración académica local; no es una pasarela de pagos reales ni un despliegue productivo. Las verificaciones finales de flujo completo y rendimiento deben documentarse antes de presentar la entrega como validada integralmente.
 
@@ -228,6 +228,9 @@ La base usada en desarrollo se llama `toco_madera`. Para migrar a otro equipo, p
 ## Autor
 
 **Angel Torres**
+**Braulio Ríos**
+**Arturo Landeros**
+**Emiliano Barajas**
 
 ---
 
