@@ -37,6 +37,7 @@ import {
 } from '../../core/services/admin-materiales';
 
 import { Auth } from '../../core/services/auth';
+import { formatearCantidad } from '../../core/utils/cantidades';
 
 @Component({
   selector: 'app-materiales-admin',
@@ -224,6 +225,10 @@ export class MaterialesAdmin implements OnInit {
     const unidad = this.unidades().find((item) => item.id_unidad === idUnidad);
 
     return unidad?.nombre ?? `Unidad ${idUnidad}`;
+  }
+
+  cantidadTexto(valor: string, idUnidad: number) {
+    return formatearCantidad(valor, this.nombreUnidad(idUnidad));
   }
 
   // ========================================================

@@ -9,8 +9,8 @@
        1. ENCABEZADO ADMINISTRATIVO
   ================================================= -->
 
-  <header class="bg-nogal px-6 py-5 text-white">
-    <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
+  <header class="bg-nogal px-4 py-4 text-white shadow-sm sm:px-6">
+    <nav aria-label="Navegación de administración" class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
       <div>
         <h1 class="font-brand text-xl font-bold">Toco Madera | Administración</h1>
 
@@ -55,11 +55,11 @@
        2. CONTENIDO PRINCIPAL
   ================================================= -->
 
-  <main class="mx-auto max-w-7xl px-6 py-10">
+  <main class="materiales-main mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
     <!-- TÍTULO Y REGISTRO -->
-    <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#E8D6BF] bg-[#FFF9F2] p-4 shadow-sm sm:p-6">
       <div>
-        <h2 class="font-brand text-3xl font-bold text-nogal">Gestión de materias primas</h2>
+        <h2 class="font-brand text-2xl font-bold text-nogal sm:text-3xl">Gestión de materias primas</h2>
 
         <p class="mt-2 text-gray-600">
           Registra y administra los materiales utilizados para fabricar nuestros productos de
@@ -131,7 +131,7 @@
          4. FILTROS
     ================================================= -->
 
-    <section aria-label="Filtros de materias primas" class="mb-6 rounded-xl bg-white p-5 shadow-sm">
+    <section aria-label="Filtros de materias primas" class="mb-6 rounded-2xl border border-[#E8D6BF] bg-white p-4 shadow-sm sm:p-5">
       <div class="grid gap-4 md:grid-cols-3">
         <!-- BÚSQUEDA -->
         <div class="md:col-span-2">
@@ -173,9 +173,9 @@
          5. TABLA DE MATERIALES
     ================================================= -->
 
-    <section class="rounded-xl bg-white shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-5">
-        <h3 class="text-lg font-semibold text-nogal">Materiales registrados</h3>
+    <section class="min-w-0 rounded-2xl border border-[#E8D6BF] bg-white shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3 rounded-t-2xl border-b border-[#E8D6BF] bg-[#FFF9F2] p-4 sm:p-5">
+        <h3 id="tituloTablaMateriales" class="text-lg font-bold text-nogal">Materiales registrados</h3>
 
         <p class="text-sm text-gray-600">
           Mostrando {{ materialesFiltrados().length }} de {{ materiales().length }}
@@ -194,27 +194,32 @@
         </div>
       } @else {
         <!-- TABLA RESPONSIVA -->
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-gray-600">
+        <div
+          role="region"
+          aria-labelledby="tituloTablaMateriales"
+          tabindex="0"
+          class="materiales-scroll overflow-auto rounded-b-2xl focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#4B2E1F]"
+        >
+          <table class="materiales-tabla w-full border-separate border-spacing-0 text-left text-sm text-gray-600">
             <thead class="bg-[#F9E9D5] text-xs uppercase text-nogal">
               <tr>
-                <th scope="col" class="px-5 py-4">Material</th>
+                <th scope="col" class="materiales-identificador sticky top-0 px-3 py-3 sm:px-5">Material</th>
 
-                <th scope="col" class="px-5 py-4">Unidad</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-5">Unidad</th>
 
-                <th scope="col" class="px-5 py-4">Stock mínimo</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-5">Stock mínimo</th>
 
-                <th scope="col" class="px-5 py-4">Estado</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-5">Estado</th>
 
-                <th scope="col" class="px-5 py-4">Acciones</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-5">Acciones</th>
               </tr>
             </thead>
 
             <tbody>
               @for (material of materialesFiltrados(); track material.id_material) {
-                <tr class="border-t border-gray-100 hover:bg-[#FFF9F2]">
+                <tr class="hover:bg-[#FFF9F2] focus-within:bg-[#FFF9F2]">
                   <!-- NOMBRE, SKU Y DESCRIPCIÓN -->
-                  <td class="px-5 py-4">
+                  <th scope="row" class="materiales-identificador px-3 py-4 font-normal sm:px-5">
                     <p class="font-semibold text-nogal">
                       {{ material.nombre }}
                     </p>
@@ -226,7 +231,7 @@
                         {{ material.descripcion }}
                       </p>
                     }
-                  </td>
+                  </th>
 
                   <!-- UNIDAD DE MEDIDA -->
                   <td class="px-5 py-4">
@@ -235,7 +240,11 @@
 
                   <!-- STOCK MÍNIMO -->
                   <td class="px-5 py-4 font-semibold text-nogal">
-                    {{ material.stock_minimo }}
+                    @let cantidad = cantidadTexto(material.stock_minimo, material.id_unidad);
+                    {{ cantidad.texto }}
+                    @if (cantidad.aviso) {
+                      <p class="mt-1 max-w-44 text-xs font-normal text-gray-700">{{ cantidad.aviso }}</p>
+                    }
                   </td>
 
                   <!-- ESTADO -->
@@ -257,7 +266,7 @@
 
                   <!-- ACCIONES -->
                   <td class="px-5 py-4">
-                    <div class="flex flex-wrap gap-2">
+                    <div class="flex w-max max-w-48 flex-wrap gap-2">
                       <button
                         type="button"
                         (click)="editarMaterial(material)"
@@ -294,10 +303,10 @@
     @if (mostrarFormulario()) {
       <section
         id="formulario-material"
-        class="mt-8 scroll-mt-6 rounded-xl border border-[#E8D6BF] bg-white p-6 shadow-sm"
+        class="mt-8 scroll-mt-6 rounded-2xl border border-[#E8D6BF] bg-white shadow-sm"
         aria-labelledby="tituloFormularioMaterial"
       >
-        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-3 rounded-t-2xl border-b border-[#E8D6BF] bg-[#FFF9F2] p-4 sm:p-6">
           <h3 id="tituloFormularioMaterial" class="text-xl font-bold text-nogal">
             {{ editandoId() === null ? 'Registrar nueva materia prima' : 'Editar materia prima' }}
           </h3>
@@ -312,11 +321,20 @@
           </button>
         </div>
 
+        @if (editandoId() !== null) {
+          <div class="materiales-contexto sticky z-30 border-b border-[#E8D6BF] bg-[#FFF9F2] px-4 py-2 text-sm text-nogal shadow-sm sm:px-6">
+            <p class="truncate">
+              Editando <strong>{{ formulario.nombre || 'Material #' + editandoId() }}</strong>
+            </p>
+            <p class="truncate text-xs">SKU: {{ formulario.sku || 'Sin SKU' }}</p>
+          </div>
+        }
+
         <!-- ERROR DEL FORMULARIO -->
         @if (errorFormulario()) {
           <div
             role="alert"
-            class="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+            class="mx-4 mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 sm:mx-6"
           >
             {{ errorFormulario() }}
           </div>
@@ -326,7 +344,7 @@
         <form
           #formMaterial="ngForm"
           (ngSubmit)="guardarMaterial()"
-          class="grid gap-5 md:grid-cols-2"
+          class="materiales-formulario grid gap-5 p-4 sm:p-6 md:grid-cols-2"
         >
           <!-- SKU -->
           <div>
@@ -486,7 +504,7 @@
     ================================================= -->
 
     @if (materialPendiente(); as material) {
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div class="fixed inset-0 z-50 grid place-items-center overflow-auto bg-black/50 p-4">
         <section
           role="alertdialog"
           aria-modal="true"
@@ -510,7 +528,7 @@
             El material no se eliminará de MySQL. Su historial permanecerá registrado.
           </p>
 
-          <div class="mt-6 flex justify-end gap-3">
+          <div class="mt-6 flex flex-wrap justify-end gap-3">
             <button
               type="button"
               (click)="cancelarCambioEstado()"
