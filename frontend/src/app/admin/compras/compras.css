@@ -1,19 +1,51 @@
-/* =====================================================
-   TOCO MADERA - ADMINISTRACIÓN DE COMPRAS
-   Archivo: admin/compras/compras.css
-   ETAPA 3.17
-===================================================== */
+﻿.lista-scroll {
+  max-block-size: min(60vh, 32rem);
+  max-block-size: min(60dvh, 32rem);
+  scroll-padding-block-start: 3rem;
+}
 
-/*
- * Estilos principales:
- * Tailwind CSS 4 y clases compatibles con Flowbite.
- *
- * Colores institucionales utilizados:
- *
- * Nogal:      #4B2E1F
- * Terracota:  #A65A2E
- * Crema:      #F9E9D5
- * Verde salvia: #718063
- *
- * No se requieren estilos CSS adicionales.
- */
+.lista-tabla { min-inline-size: 48rem; }
+
+.lista-tabla thead th {
+  z-index: 20;
+  background: #f9e9d5;
+  box-shadow: inset 0 -1px #e8d6bf;
+}
+
+.lista-tabla tbody :is(th, td) { border-block-end: 1px solid #f2e8dc; }
+
+.identificador {
+  inline-size: 11rem;
+  max-inline-size: 11rem;
+  overflow-wrap: anywhere;
+}
+
+.contexto-formulario { top: env(safe-area-inset-top, 0px); }
+
+.acciones-compra {
+  padding-block-end: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 48rem) and (min-height: 40rem) {
+  form:not(:has(:is(input, select, textarea, button):focus-visible)) .acciones-compra {
+    position: sticky;
+    bottom: 0;
+    box-shadow: 0 -4px 12px rgb(75 46 31 / 8%);
+  }
+}
+
+form :is(input, select, textarea, button, summary) {
+  scroll-margin-block-start: 4rem;
+}
+
+@media (min-width: 48rem) {
+  .lista-scroll { scroll-padding-inline-start: 11rem; }
+  .identificador {
+    position: sticky;
+    inset-inline-start: 0;
+    border-inline-end: 1px solid #e8d6bf;
+  }
+  .lista-tabla tbody .identificador { z-index: 10; background: white; }
+  .lista-tabla tbody tr:is(:hover, :focus-within) .identificador { background: #fff9f2; }
+  .lista-tabla thead .identificador { z-index: 25; }
+}

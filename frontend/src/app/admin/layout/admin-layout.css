@@ -1,0 +1,50 @@
+.admin-sidebar,
+.admin-marca {
+  display: none;
+}
+
+.admin-sidebar.menu-abierto {
+  display: block;
+}
+
+.admin-sidebar .admin-activo {
+  background: #f9e9d5;
+  color: #4b2e1f;
+  font-weight: 700;
+}
+
+.admin-focus:focus-visible {
+  outline: 2px solid #f9e9d5;
+  outline-offset: 2px;
+}
+
+.admin-contenido:focus-visible {
+  outline: 2px solid #4b2e1f;
+  outline-offset: -2px;
+}
+
+@media (min-width: 64rem) {
+  .admin-layout {
+    display: grid;
+    grid-template-columns: 15.5rem minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .admin-mobile {
+    display: none;
+  }
+
+  .admin-sidebar,
+  .admin-sidebar.menu-abierto {
+    display: block;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+
+  .admin-marca {
+    display: flex;
+  }
+}

@@ -592,7 +592,7 @@ def editar_material(id_material):
             "success": False,
             "message": (
                 "No se pudo actualizar el material "
-                "por una restricción de MySQL."
+                "por un conflicto con los datos existentes."
             )
         }), 409
 

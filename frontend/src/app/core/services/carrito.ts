@@ -9,6 +9,7 @@
  */
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Auth } from './auth';
+import { errorGrabado, textoGrabadoNormalizado } from '../utils/texto-grabado';
 
 export interface ProductoCatalogo {
   id_producto: number;
@@ -39,6 +40,11 @@ export interface ItemCheckout {
   cantidad: number;
   texto_grabado: string | null;
   notas: string | null;
+}
+
+export function errorCantidadProducto(cantidad: number | null): string {
+  return cantidad !== null && Number.isInteger(cantidad) && cantidad >= 1 && cantidad <= 100
+    ? '' : 'Ingresa una cantidad entera entre 1 y 100.';
 }
 
 interface EstadoGuardado {
@@ -88,20 +94,17 @@ export class CarritoService {
     if (!Number.isInteger(producto.id_producto) || producto.id_producto < 1) {
       throw new Error('Producto inválido.');
     }
-    if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > 100) {
-      throw new Error('La cantidad debe estar entre 1 y 100.');
-    }
+    const errorCantidad = errorCantidadProducto(cantidad);
+    if (errorCantidad) throw new Error(errorCantidad);
     const precio = Number(producto.precio_lista);
     if (!Number.isFinite(precio) || precio <= 0) {
       throw new Error('El precio del producto no es válido.');
     }
     const permiteGrabado = Boolean(producto.permite_grabado);
-    const grabado = texto.trim();
+    const grabado = textoGrabadoNormalizado(texto);
     const observaciones = notas.trim();
-    if (grabado && !permiteGrabado) throw new Error('Este producto no permite grabado.');
-    if (grabado.length > Math.min(Number(producto.max_caracteres_grabado) || 0, 120)) {
-      throw new Error('El grabado supera el límite de caracteres.');
-    }
+    const problemaGrabado = errorGrabado(producto, texto);
+    if (problemaGrabado) throw new Error(problemaGrabado);
     if (observaciones.length > 200) throw new Error('Las notas admiten máximo 200 caracteres.');
 
     const actual = this.estadoActivo();
@@ -128,11 +131,23 @@ export class CarritoService {
 
   cambiarCantidad(idLinea: string, cantidad: number): void {
     this.exigirCliente();
-    if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > 100) {
-      throw new Error('La cantidad debe estar entre 1 y 100.');
-    }
+    const errorCantidad = errorCantidadProducto(cantidad);
+    if (errorCantidad) throw new Error(errorCantidad);
     const items = this.items().map(i => i.id_linea === idLinea ? { ...i, cantidad } : i);
     this.actualizar(items);
+  }
+
+  cambiarGrabado(idLinea: string, texto: string): void {
+    this.exigirCliente();
+    const items = this.items();
+    const item = items.find((linea) => linea.id_linea === idLinea);
+    if (!item) throw new Error('El artículo ya no está en el carrito.');
+    const problema = errorGrabado(item, texto);
+    if (problema) throw new Error(problema);
+    const grabado = textoGrabadoNormalizado(texto) || null;
+    if (grabado === item.texto_grabado) return;
+    this.actualizar(items.map((linea) => linea.id_linea === idLinea
+      ? { ...linea, texto_grabado: grabado } : linea));
   }
 
   quitar(idLinea: string): void {
@@ -155,7 +170,7 @@ export class CarritoService {
     this.exigirCliente();
     return this.items().map(i => ({
       id_producto: i.id_producto, cantidad: i.cantidad,
-      texto_grabado: i.texto_grabado, notas: i.notas
+      texto_grabado: i.texto_grabado, notas: i.notas,
     }));
   }
 

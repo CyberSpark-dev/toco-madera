@@ -1,3 +1,5 @@
+import { mensajeNotificable } from '../../core/services/notificaciones';
+import { mensajeError } from '../../core/utils/mensajes';
 /**
  * ======================================================
  * TOCO MADERA - GESTIÓN ADMINISTRATIVA DE PROVEEDORES
@@ -20,7 +22,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -36,7 +38,7 @@ import { Auth } from '../../core/services/auth';
   selector: 'app-proveedores-admin',
   standalone: true,
 
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule],
 
   templateUrl: './proveedores.html',
   styleUrl: './proveedores.css',
@@ -59,9 +61,9 @@ export class ProveedoresAdmin implements OnInit {
   cargando = signal(true);
   guardando = signal(false);
 
-  error = signal('');
-  mensaje = signal('');
-  errorFormulario = signal('');
+  error = mensajeNotificable('error');
+  mensaje = mensajeNotificable('exito');
+  errorFormulario = mensajeNotificable('error');
 
   busqueda = signal('');
   filtroEstado = signal('TODOS');
@@ -294,7 +296,7 @@ export class ProveedoresAdmin implements OnInit {
         this.mostrarFormulario.set(false);
         this.editandoId.set(null);
 
-        this.mensaje.set(respuesta.message);
+        this.mensaje.set(id === null ? 'Proveedor registrado correctamente.' : 'Los cambios se guardaron correctamente.');
 
         // Recuperar el estado real desde MySQL.
         this.cargarProveedores();
@@ -315,9 +317,7 @@ export class ProveedoresAdmin implements OnInit {
         }
 
         this.errorFormulario.set(
-          typeof error.error?.message === 'string'
-            ? error.error.message
-            : 'No fue posible guardar el proveedor.',
+          mensajeError(error, 'No fue posible guardar el proveedor.'),
         );
       },
     });
@@ -364,7 +364,7 @@ export class ProveedoresAdmin implements OnInit {
         this.guardando.set(false);
         this.proveedorPendiente.set(null);
 
-        this.mensaje.set(respuesta.message);
+        this.mensaje.set(nuevoEstado ? 'Proveedor activado correctamente.' : 'Proveedor desactivado correctamente.');
         this.cargarProveedores();
       },
 
@@ -400,10 +400,7 @@ export class ProveedoresAdmin implements OnInit {
       return;
     }
 
-    // Priorizar el mensaje enviado por Flask.
-    const mensajeServidor = typeof error.error?.message === 'string' ? error.error.message : null;
-
-    this.error.set(mensajeServidor ?? mensajePredeterminado);
+    this.error.set(mensajeError(error, mensajePredeterminado));
   }
 
   // ====================================================

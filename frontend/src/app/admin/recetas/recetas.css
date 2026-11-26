@@ -1,17 +1,39 @@
-/* =====================================================
-   TOCO MADERA - GESTIÓN DE RECETAS
-   Archivo: admin/recetas/recetas.css
-   ETAPA 3.17.7
-===================================================== */
+﻿.lista-scroll {
+  max-block-size: min(60vh, 32rem);
+  max-block-size: min(60dvh, 32rem);
+  scroll-padding-block-start: 3rem;
+}
 
-/*
- * Los estilos del módulo utilizan Tailwind CSS 4.
- *
- * Identidad visual:
- * Nogal      #4B2E1F
- * Terracota  #A65A2E
- * Crema      #F9E9D5
- * Salvia     #718063
- *
- * No se requieren estilos adicionales.
- */
+.lista-tabla { min-inline-size: 48rem; }
+
+.lista-tabla thead th {
+  z-index: 20;
+  background: #f9e9d5;
+  box-shadow: inset 0 -1px #e8d6bf;
+}
+
+.lista-tabla tbody :is(th, td) { border-block-end: 1px solid #f2e8dc; }
+
+.identificador {
+  inline-size: 11rem;
+  max-inline-size: 11rem;
+  overflow-wrap: anywhere;
+}
+
+.contexto-formulario { top: env(safe-area-inset-top, 0px); }
+
+form :is(input, select, textarea, button, summary) {
+  scroll-margin-block-start: 4rem;
+}
+
+@media (min-width: 48rem) {
+  .lista-scroll { scroll-padding-inline-start: 11rem; }
+  .identificador {
+    position: sticky;
+    inset-inline-start: 0;
+    border-inline-end: 1px solid #e8d6bf;
+  }
+  .lista-tabla tbody .identificador { z-index: 10; background: white; }
+  .lista-tabla tbody tr:is(:hover, :focus-within) .identificador { background: #fff9f2; }
+  .lista-tabla thead .identificador { z-index: 25; }
+}

@@ -1,3 +1,5 @@
+import { etiquetaPedido } from '../../core/utils/etiquetas-pedido';
+import { formatearDinero } from '../../core/utils/dinero';
 /**
  * ======================================================
  * TOCO MADERA - DASHBOARD ADMINISTRATIVO
@@ -36,10 +38,9 @@ import {
 } from '@angular/core';
 
 // Herramienta para mostrar cantidades monetarias.
-import { CurrencyPipe } from '@angular/common';
 
 // Navegación del proyecto.
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 // Tipado de errores HTTP.
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
@@ -79,9 +80,6 @@ interface EstadisticasDashboard {
   // Componente independiente de Angular.
   standalone: true,
 
-  // Herramientas utilizadas por dashboard.html.
-  imports: [RouterLink, CurrencyPipe],
-
   // Archivos de presentación.
   templateUrl: './dashboard.html',
 
@@ -92,6 +90,7 @@ interface EstadisticasDashboard {
 // 3. CLASE PRINCIPAL
 // ======================================================
 export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
+  readonly dinero = formatearDinero;
   // ====================================================
   // 4. SERVICIOS
   // ====================================================
@@ -113,7 +112,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   // 5. ESTADO DE CONEXIÓN CON FLASK
   // ====================================================
 
-  estadoBackend = signal('Comprobando conexión con Flask...');
+  estadoBackend = signal('Comprobando disponibilidad…');
 
   // ====================================================
   // 6. REFERENCIA A LA GRÁFICA CHART.JS
@@ -174,7 +173,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         console.log('Respuesta recibida desde Flask:', respuesta);
 
         // Mostrar el mensaje devuelto por Flask.
-        this.estadoBackend.set(respuesta.message);
+        this.estadoBackend.set('El servicio está disponible.');
       },
 
       // ================================================
@@ -224,7 +223,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         // ----------------------------------------------
 
         if (error.status === 0) {
-          this.estadoBackend.set('No se pudo conectar con el servidor Flask.');
+          this.estadoBackend.set('No hay conexión en este momento. Inténtalo nuevamente.');
 
           return;
         }
@@ -233,52 +232,14 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         // OTROS ERRORES
         // ----------------------------------------------
 
-        this.estadoBackend.set('Ocurrió un error al consultar el backend.');
+        this.estadoBackend.set('No pudimos comprobar la disponibilidad.');
       },
     });
   }
 
   // ====================================================
-  // 9. CERRAR SESIÓN
-  // ====================================================
-
-  // ====================================================
   // 9. CERRAR SESIÓN CON CONFIRMACIÓN
   // ====================================================
-
-  /**
-   * TOCO MADERA - DASHBOARD ADMINISTRATIVO
-   *
-   * Solicita confirmación antes de cerrar sesión.
-   *
-   * FUNCIONAMIENTO:
-   * 1. Muestra una ventana de confirmación.
-   * 2. Si selecciona Cancelar, conserva la sesión.
-   * 3. Si selecciona Aceptar, elimina el JWT.
-   * 4. Limpia los datos del administrador.
-   * 5. Redirige a la pantalla de login.
-   *
-   * No modifica los indicadores, las gráficas
-   * ni las conexiones existentes con Flask.
-   */
-  cerrarSesion(): void {
-    // Solicitar confirmación al administrador.
-    const confirmado = window.confirm(
-      '¿Estás seguro de que quieres cerrar sesión como administrador?',
-    );
-
-    // Si selecciona Cancelar, permanecer conectado.
-    if (!confirmado) {
-      return;
-    }
-
-    // Cerrar sesión mediante el servicio Auth.
-    // Elimina el token JWT y los datos del usuario.
-    this.auth.cerrarSesion();
-
-    // Regresar al formulario de inicio de sesión.
-    this.router.navigateByUrl('/login');
-  }
 
   /** Consulta protegida. Las gráficas se muestran vacías si falla Flask. */
   cargarEstadisticas(): void {
@@ -302,7 +263,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
           this.errorEstadisticas.set(
             e.status === 401 || e.status === 403
               ? 'Tu sesión administrativa expiró o no tiene permisos.'
-              : 'No fue posible consultar las estadísticas reales de MySQL.',
+              : 'No pudimos cargar las estadísticas. Inténtalo nuevamente.',
           );
           this.chart?.destroy();
           this.chart = undefined;
@@ -342,14 +303,19 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true } },
+        scales: { y: { beginAtZero: true, ticks: { callback: (valor) => formatearDinero(valor) } } },
+        plugins: {
+          tooltip: {
+            callbacks: { label: ({ parsed }) => formatearDinero(parsed.y) },
+          },
+        },
       },
     });
 
     this.estadosChart = new Chart(this.estadosCanvas.nativeElement, {
       type: 'doughnut',
       data: {
-        labels: datos.pedidos_por_estado.map((d) => d.estado.replaceAll('_', ' ')),
+        labels: datos.pedidos_por_estado.map((d) => etiquetaPedido(d.estado)),
         datasets: [
           {
             label: 'Pedidos',

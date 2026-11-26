@@ -53,12 +53,20 @@ export interface OrdenProduccion {
   fecha_fin: string | null;
 }
 export interface MaterialVerificado {
+  id_material?: number;
+  sku?: string;
+  id_unidad?: number;
+  unidad?: string;
+  cantidad_faltante?: string;
+  elegible_compra?: boolean;
+  motivo_bloqueo?: string | null;
   nombre: string;
   cantidad_requerida: string;
   stock_disponible: string;
   suficiente: boolean;
 }
 export interface VerificacionMateriales {
+  motivo_bloqueo?: string | null;
   success: boolean;
   puede_consumir: boolean;
   ya_consumida: boolean;

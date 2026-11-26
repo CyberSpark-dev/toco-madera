@@ -1,24 +1,30 @@
+import { etiquetaPedido } from '../../core/utils/etiquetas-pedido';
+import { mensajeNotificable } from '../../core/services/notificaciones';
+import { mensajeError } from '../../core/utils/mensajes';
+import { formatearDinero } from '../../core/utils/dinero';
 /** Etapa 3.20.2 — UI ADMIN. No guarda secretos ni decide permisos en el navegador. */
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AdminPedidosService, PedidoRevision, DetalleRevision } from '../../core/services/admin-pedidos';
 
 @Component({
   selector: 'app-pedidos-admin',
   standalone: true,
-  imports: [RouterLink, CurrencyPipe],
+  imports: [RouterLink],
   templateUrl: './pedidos.html',
+  styleUrl: './pedidos.css',
 })
 export class PedidosAdmin implements OnInit {
+  readonly etiquetaPedido = etiquetaPedido;
+
   private readonly api = inject(AdminPedidosService);
   readonly pedidos = signal<PedidoRevision[]>([]);
   readonly detalle = signal<DetalleRevision | null>(null);
   readonly cargando = signal(false);
   readonly guardando = signal(false);
-  readonly error = signal('');
-  readonly mensaje = signal('');
+  readonly error = mensajeNotificable('error');
+  readonly mensaje = mensajeNotificable('exito');
   readonly filtro = signal('TODOS');
   readonly motivo = signal('');
 
@@ -51,22 +57,22 @@ export class PedidosAdmin implements OnInit {
     }
     // No marcar éxito antes de que Flask confirme su transacción.
     const texto = decision === 'APROBADO' ? 'AUTORIZAR' : 'RECHAZAR';
-    if (!window.confirm(`${texto} el pedido ${d.pedido.folio}? Esta decisión queda registrada en MySQL.`)) return;
+    if (!window.confirm(`${texto} el pedido ${d.pedido.folio}? Esta decisión quedará registrada en el pedido.`)) return;
     this.guardando.set(true); this.error.set(''); this.mensaje.set('');
     const id = d.pedido.id_pedido;
     this.api.decidir(id, decision, this.motivo().trim()).subscribe({
       next: r => {
-        this.guardando.set(false); this.mensaje.set(r.message);
+        this.guardando.set(false); this.mensaje.set(decision === 'APROBADO' ? 'Pedido autorizado para fabricación.' : 'Pedido rechazado para fabricación.');
         this.detalle.set(null); this.cargar();
         this.api.detalle(id).subscribe({ next: x => this.detalle.set(x) });
       },
       error: (e: HttpErrorResponse) => { this.guardando.set(false); this.error.set(this.errorHttp(e)); }
     });
   }
-  dinero(v: string | number): string { return Number(v).toLocaleString('es-MX', {style:'currency',currency:'MXN'}); }
+  readonly dinero = formatearDinero;
   private errorHttp(e: HttpErrorResponse): string {
     if (e.status === 401) return 'La sesión ha expirado. Vuelve a iniciar sesión como ADMIN.';
     if (e.status === 403) return 'La cuenta no tiene permisos administrativos.';
-    return typeof e.error?.message === 'string' ? e.error.message : 'Error al consultar el servidor.';
+    return mensajeError(e, 'No pudimos completar la operación del pedido. Inténtalo nuevamente.');
   }
 }

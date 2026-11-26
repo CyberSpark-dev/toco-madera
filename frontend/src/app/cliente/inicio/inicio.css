@@ -1,0 +1,162 @@
+.contenido-tienda {
+  max-width: 80rem;
+  margin-inline: auto;
+  padding: clamp(1rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2rem) clamp(3rem, 8vw, 7rem);
+  color: #4b2e1f;
+}
+
+.portada {
+  display: grid;
+  align-items: stretch;
+  background: #fffaf3;
+  border: 1px solid #e2d0bb;
+  border-radius: clamp(1rem, 3vw, 2rem);
+  overflow: hidden;
+}
+
+.portada-texto {
+  padding: clamp(1.5rem, 4vw, 3.8rem);
+}
+
+.rotulo {
+  margin-block-end: .75rem;
+  color: #4d5d43;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.portada h1 {
+  font-size: clamp(2.55rem, 6vw, 5.5rem);
+  font-weight: 750;
+  letter-spacing: -.045em;
+  line-height: .98;
+}
+
+.portada-subtitulo {
+  max-width: 30ch;
+  margin: .9rem auto 0;
+  font-size: clamp(1.35rem, 2.4vw, 2.15rem);
+  font-weight: 600;
+  line-height: 1.19;
+  text-wrap: balance;
+  color: #85502f;
+}
+
+.portada-descripcion {
+  max-width: 32ch;
+  margin: 1rem auto 1.45rem;
+  color: #584538;
+  line-height: 1.6;
+}
+
+.accion {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: .6rem 1rem;
+  border: 1px solid #6d4934;
+  border-radius: .55rem;
+  font-size: .9rem;
+  font-weight: 700;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.accion-principal { background: #4b2e1f; color: #fffaf3; }
+.accion-principal:hover { background: #69432e; }
+.accion-secundaria { color: #4b2e1f; }
+.accion-secundaria:hover { background: #ead9c3; }
+
+.muestra {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: 18rem;
+  aspect-ratio: 5 / 4;
+  align-items: end;
+  background: #62402b;
+  color: #fffaf3;
+  isolation: isolate;
+}
+
+.muestra-foto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.muestra-pie {
+  position: relative;
+  padding: 2rem 1rem 4.5rem;
+  background: linear-gradient(transparent, rgb(35 23 17 / 94%) 48%);
+}
+
+.muestra-controles { position: absolute; inset: auto 1rem .75rem auto; }
+.muestra-controles button {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: 1px solid #e5d7c6;
+  background: #39251b;
+  font-size: 1.15rem;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+.muestra-controles button:hover { transform: translateY(-2px); }
+
+.beneficios,
+.catalogo-tienda,
+.nosotros { margin-block-start: clamp(3rem, 7vw, 6rem); }
+
+.beneficios h2,
+.nosotros h2 { font-size: clamp(1.75rem, 4vw, 3rem); font-weight: 700; line-height: 1.08; }
+
+.beneficios-lista {
+  display: grid;
+  gap: .75rem;
+  margin-top: 1.35rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.beneficios-lista li { padding: 1rem; border-radius: .8rem; background: #e8ecdf; }
+.beneficios-lista h3 { font-weight: 700; line-height: 1.2; }
+.beneficios-lista p { margin-top: .35rem; color: #4b5143; font-size: .85rem; }
+
+.tarjeta-producto {
+  border: 1px solid #e5d4c1;
+  border-radius: 1rem;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+@media (hover: hover) {
+  .tarjeta-producto:hover { transform: translateY(-3px); box-shadow: 0 .7rem 1.6rem #4b2e1f1a; }
+}
+
+.nosotros { display: grid; overflow: hidden; border-radius: 1.25rem; background: #e8ecdf; }
+.nosotros-texto { padding: clamp(1.5rem, 4vw, 3.5rem); }
+.nosotros-texto > p:not(.rotulo) { margin-block: 1rem; max-width: 55ch; color: #424939; }
+
+.pie-tienda li :is(a, button) { display: inline-block; padding-block: .25rem; text-decoration: underline; }
+.salto-tienda { position: absolute; z-index: 10; inset: .5rem auto auto .5rem; padding: .7rem; background: #fffaf3; color: #4b2e1f; transform: translateY(-170%); }
+.salto-tienda:focus { transform: none; }
+:is(.cabecera-tienda, .contenido-tienda, .pie-tienda) :is(a, button, h2, h3):focus-visible { outline: 2px solid #725432; outline-offset: 3px; }
+:is(.muestra, .pie-tienda) :is(a, button):focus-visible { outline-color: #f8eee0; }
+:is(#titulo-catalogo, .tarjeta-producto h3, #nosotros) { scroll-margin-block-start: 2rem; }
+
+@media (min-width: 48rem) {
+  .portada { grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); }
+  .portada-texto { align-self: center; }
+  .beneficios-lista { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .nosotros { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 47.99rem) {
+  .pie-tienda { padding-block-end: env(safe-area-inset-bottom, 0px); }
+  .pie-con-aviso { padding-block-end: calc(40dvh + max(1rem, env(safe-area-inset-bottom))); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a, button, .accion, .tarjeta-producto, .muestra-controles button { transition: none; }
+  .tarjeta-producto:hover, .muestra-controles button:hover { transform: none; }
+}

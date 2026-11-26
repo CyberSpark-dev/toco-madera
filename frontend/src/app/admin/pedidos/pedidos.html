@@ -1,35 +1,34 @@
-<div class="min-h-screen bg-[#F9E9D5] px-4 py-8 text-[#4B2E1F]">
+<div class="min-h-screen bg-crema px-4 py-6 text-nogal sm:px-6 sm:py-8">
   <main class="mx-auto max-w-7xl space-y-6">
-    <header class="flex flex-wrap items-center justify-between gap-3">
-      <div><h1 class="text-3xl font-bold">Revisión de pedidos</h1>
+    <header class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E8D6BF] bg-[#FFF9F2] p-4 shadow-sm sm:p-6">
+      <div><h1 class="font-brand text-2xl font-bold sm:text-3xl">Pedidos y autorizaciones</h1>
         <p class="text-sm text-gray-600">Autorización del taller, seguimiento financiero y artículos personalizados.</p></div>
-      <div class="flex gap-2">
-        <a routerLink="/admin/operaciones" class="rounded-lg border border-[#718063] bg-[#718063] px-4 py-2 font-semibold text-white">Taller y entregas</a>
-        <a routerLink="/admin/dashboard" class="rounded-lg border border-[#A65A2E] px-4 py-2 font-semibold">Dashboard</a>
+      <div class="flex flex-wrap gap-2">
+        <a routerLink="/admin/operaciones" class="rounded-lg border border-[#718063] bg-[#718063] px-4 py-2 font-semibold text-white">Producción y entregas</a>
         <button type="button" (click)="cargar()" class="rounded-lg bg-[#A65A2E] px-4 py-2 font-semibold text-white">Actualizar</button>
       </div>
     </header>
     @if (error()) { <p role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-red-800">{{ error() }}</p> }
     @if (mensaje()) { <p role="status" class="rounded-lg border border-green-300 bg-green-50 p-3 text-green-900">{{ mensaje() }}</p> }
-    <div class="flex flex-wrap items-center gap-2">
+    <div role="group" aria-label="Filtrar autorización" class="flex flex-wrap items-center gap-2 rounded-xl border border-[#E8D6BF] bg-white p-3">
       <span class="font-semibold">Filtrar autorización:</span>
       @for (f of ['TODOS','POR_REVISAR','APROBADO','RECHAZADO']; track f) {
-        <button type="button" (click)="cambiarFiltro(f)"
-          [class]="filtro() === f ? 'rounded-full border border-[#A65A2E] bg-[#A65A2E] px-3 py-1 text-sm text-white' : 'rounded-full border border-[#A65A2E] px-3 py-1 text-sm'">{{ f }}</button>
+        <button type="button" (click)="cambiarFiltro(f)" [attr.aria-pressed]="filtro() === f"
+          [class]="filtro() === f ? 'rounded-full border border-[#A65A2E] bg-[#A65A2E] px-3 py-1 text-sm text-white' : 'rounded-full border border-[#A65A2E] px-3 py-1 text-sm'">{{ f === 'POR_REVISAR' ? 'Por revisar' : f === 'APROBADO' ? 'Aprobados' : f === 'RECHAZADO' ? 'Rechazados' : 'Todos' }}</button>
       }
     </div>
-    <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-      <section class="space-y-3" aria-label="Listado de pedidos">
+    <div class="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
+      <section class="lista-pedidos min-w-0 space-y-3 overflow-auto rounded-2xl p-1" aria-label="Listado de pedidos" tabindex="0">
         @if (cargando()) { <p class="rounded-xl bg-white p-4">Consultando pedidos...</p> }
         @for (p of verPedidos(); track p.id_pedido) {
-          <article class="rounded-xl border border-[#E8D6BF] bg-white p-4 shadow-sm">
+          <article class="rounded-2xl border border-[#E8D6BF] bg-white p-4 shadow-sm">
             <div class="flex flex-wrap justify-between gap-2"><div>
               <p class="text-xs text-gray-500">Pedido #{{ p.id_pedido }}</p>
               <h2 class="font-bold break-all">{{ p.folio }}</h2>
               <p class="text-sm">{{ p.cliente_nombre }} · {{ p.fecha }}</p>
-            </div><div class="text-right"><span class="rounded bg-[#F9E9D5] px-2 py-1 text-xs font-semibold">{{ p.autorizacion }}</span>
-              <p class="mt-1 text-xs text-gray-500">{{ p.estado }}</p></div></div>
-            <div class="mt-3 grid grid-cols-3 gap-2 text-sm">
+            </div><div class="text-right"><span class="rounded bg-[#F9E9D5] px-2 py-1 text-xs font-semibold">{{ etiquetaPedido(p.autorizacion) }}</span>
+              <p class="mt-1 text-xs text-gray-500">{{ etiquetaPedido(p.estado) }}</p></div></div>
+            <div class="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-[#FFF9F2] p-3 text-sm sm:grid-cols-3">
               <p>Total: <strong>{{ dinero(p.total) }}</strong></p>
               <p>Pagado: <strong>{{ dinero(p.pagado) }}</strong></p>
               <p>Saldo: <strong>{{ dinero(p.saldo) }}</strong></p>
@@ -38,12 +37,14 @@
           </article>
         } @empty { @if (!cargando()) { <p class="rounded-xl bg-white p-4">No hay pedidos en este filtro.</p> } }
       </section>
-      <section class="h-fit space-y-4 rounded-xl border border-[#E8D6BF] bg-white p-5 shadow-sm" aria-label="Detalle del pedido">
+      <section class="min-w-0 space-y-4 rounded-2xl border border-[#E8D6BF] bg-white p-4 shadow-sm sm:p-5" aria-label="Detalle del pedido">
         @if (detalle(); as d) {
-          <h2 class="text-xl font-bold">Pedido #{{ d.pedido.id_pedido }} — {{ d.pedido.autorizacion }}</h2>
-          <p class="break-all text-sm text-gray-500">{{ d.pedido.folio }}</p>
+          <header class="contexto-pedido sticky z-20 rounded-lg border border-[#E8D6BF] bg-[#FFF9F2] px-3 py-2 shadow-sm">
+            <h2 class="truncate font-brand text-base font-bold" [title]="d.pedido.folio">{{ d.pedido.folio }}</h2>
+            <p class="text-xs">#{{ d.pedido.id_pedido }} · {{ etiquetaPedido(d.pedido.estado) }} · {{ etiquetaPedido(d.pedido.autorizacion) }}</p>
+          </header>
           <p><strong>Cliente:</strong> {{ d.pedido.cliente_nombre }} · {{ d.pedido.cliente_correo }} · {{ d.pedido.cliente_telefono || 'Sin teléfono' }}</p>
-          <p><strong>Estado:</strong> {{ d.pedido.estado }} · <strong>Pago:</strong> {{ d.pedido.modalidad_pago }}</p>
+          <p><strong>Estado:</strong> {{ etiquetaPedido(d.pedido.estado) }} · <strong>Pago:</strong> {{ etiquetaPedido(d.pedido.modalidad_pago) }}</p>
           <p><strong>Entrega:</strong> {{ d.pedido.tipo_entrega }} · {{ d.entrega?.programada || d.pedido.fecha_entrega_prometida || 'Por confirmar' }}</p>
           <p><strong>Recolección:</strong> {{ d.entrega?.punto_recoleccion || 'Lugar por confirmar' }}</p>
           <h3 class="border-t pt-3 font-bold">Artículos y grabados</h3>
@@ -51,13 +52,14 @@
             <div class="rounded-lg bg-[#FFF9F2] p-3 text-sm">
               <p class="font-semibold">{{ item.producto }} × {{ item.cantidad }} · {{ dinero(item.precio_unitario_acordado) }} por unidad</p>
               <p>Tipo de surtido: {{ item.tipo_surtido }}</p>
-              @if (item.texto_grabado) { <p>Grabado: {{ item.texto_grabado }}</p> }
+              @if (item.texto_grabado) { <p class="whitespace-pre-wrap"><strong>Grabado:</strong> {{ item.texto_grabado }}</p> }
+
               @if (item.notas) { <p>Notas: {{ item.notas }}</p> }
             </div>
           }
-          <h3 class="border-t pt-3 font-bold">Pagos SIMULADOS</h3>
+          <h3 class="border-t pt-3 font-bold">Pagos simulados</h3>
           @for (pago of d.pagos; track pago.id_pago) {
-            <p class="text-sm">{{ dinero(pago.monto) }} · {{ pago.metodo }} · {{ pago.estado }}</p>
+            <p class="text-sm">{{ dinero(pago.monto) }} · {{ etiquetaPedido(pago.metodo) }} · {{ etiquetaPedido(pago.estado) }}</p>
           }
           @if (d.pedido.motivo) { <p class="rounded-lg bg-orange-50 p-3 text-sm"><strong>Motivo:</strong> {{ d.pedido.motivo }}</p> }
           @if (puedeDecidir(d.pedido)) {

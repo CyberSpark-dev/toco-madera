@@ -154,7 +154,7 @@ def finalizar_orden(id_orden):
         if orden['estado'] != 'EN_PROCESO':
             db.session.rollback()
             return jsonify(success=False,
-                           message='Solo se finalizan órdenes EN_PROCESO.'), 409
+                           message='Solo puedes finalizar órdenes en proceso.'), 409
         if int(orden['cantidad']) <= 0:
             db.session.rollback()
             return jsonify(success=False, message='Cantidad inválida.'), 409

@@ -1,0 +1,19 @@
+.lista-pedidos {
+  max-block-size: min(58vh, 36rem);
+  max-block-size: min(58dvh, 36rem);
+}
+
+.contexto-pedido {
+  top: env(safe-area-inset-top, 0px);
+}
+
+main { overflow-wrap: anywhere; }
+
+:is(button, a, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #4b2e1f;
+  outline-offset: 2px;
+}
+
+:is(button, a, textarea) {
+  scroll-margin-block-start: calc(4rem + env(safe-area-inset-top, 0px));
+}

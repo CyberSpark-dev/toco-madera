@@ -1,3 +1,6 @@
+import { IdentidadTocoMadera } from '../../core/ui/identidad-toco-madera';
+import { mensajeNotificable } from '../../core/services/notificaciones';
+import { mensajeError } from '../../core/utils/mensajes';
 /**
  * ==========================================
  * TOCO MADERA - REGISTRO DE CLIENTES
@@ -19,7 +22,7 @@ import { Auth } from '../../core/services/auth';
 @Component({
   selector: 'app-registro',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [IdentidadTocoMadera, FormsModule, RouterLink],
   templateUrl: './registro.html',
   styleUrl: './registro.css',
 })
@@ -43,7 +46,7 @@ export class Registro {
   // 3. ESTADO DE LA INTERFAZ
   // ========================================
   cargando = signal(false);
-  error = signal('');
+  error = mensajeNotificable('error');
   mostrarPassword = signal(false);
 
   // ========================================
@@ -117,9 +120,9 @@ export class Registro {
         if (error.status === 409) {
           this.error.set('Este correo ya está registrado.');
         } else if (error.status === 400) {
-          this.error.set(error.error?.message || 'Revisa los datos del formulario.');
+          this.error.set(mensajeError(error, 'Revisa los datos del formulario e inténtalo nuevamente.'));
         } else if (error.status === 0) {
-          this.error.set('No se pudo conectar con Flask.');
+          this.error.set('En este momento no hay conexión. Inténtalo nuevamente.');
         } else {
           this.error.set('Ocurrió un error al crear la cuenta.');
         }

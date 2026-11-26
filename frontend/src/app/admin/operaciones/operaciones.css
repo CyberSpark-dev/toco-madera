@@ -1,0 +1,31 @@
+.lista-operaciones {
+  max-block-size: min(56vh, 36rem);
+  max-block-size: min(56dvh, 36rem);
+}
+
+.contexto-operaciones {
+  top: env(safe-area-inset-top, 0px);
+}
+
+main { overflow-wrap: anywhere; }
+
+:is(button, a, input, [tabindex]):focus-visible {
+  outline: 2px solid #4b2e1f;
+  outline-offset: 2px;
+}
+
+:is(button, a, input) {
+  scroll-margin-block-start: calc(4rem + env(safe-area-inset-top, 0px));
+}
+
+@media (min-width: 80rem) {
+  .contexto-orden {
+    position: sticky;
+    top: calc(4rem + env(safe-area-inset-top, 0px));
+    z-index: 10;
+  }
+
+  article :is(button, input) {
+    scroll-margin-block-start: calc(8rem + env(safe-area-inset-top, 0px));
+  }
+}

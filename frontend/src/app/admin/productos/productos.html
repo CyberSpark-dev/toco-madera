@@ -8,53 +8,16 @@
        1. ENCABEZADO ADMINISTRATIVO
   ========================================== -->
 
-  <header class="bg-nogal px-6 py-5 text-white">
-    <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
-      <div>
-        <h1 class="font-brand text-xl font-bold">Toco Madera | Administración</h1>
-
-        <p class="mt-1 text-sm text-[#F9E9D5]">Gestión del catálogo comercial</p>
-      </div>
-
-      <div class="flex flex-wrap gap-3">
-        <!-- VOLVER AL DASHBOARD -->
-        <a
-          routerLink="/admin/dashboard"
-          class="rounded-lg border border-white/40 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
-        >
-          Dashboard
-        </a>
-
-        <!-- VISITAR LA TIENDA -->
-        <a
-          routerLink="/"
-          class="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-nogal hover:bg-crema"
-        >
-          Ver tienda
-        </a>
-
-        <!-- CERRAR SESIÓN -->
-        <button
-          type="button"
-          (click)="cerrarSesion()"
-          class="rounded-lg bg-terracota px-4 py-2 text-sm font-semibold text-white hover:bg-[#8C4825]"
-        >
-          Cerrar sesión
-        </button>
-      </div>
-    </nav>
-  </header>
-
   <!-- ==========================================
        2. CONTENIDO PRINCIPAL
   ========================================== -->
 
-  <main class="mx-auto max-w-7xl px-6 py-10">
+  <main class="gestion-modulo mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
     <!-- TÍTULO Y BOTÓN NUEVO PRODUCTO -->
 
-    <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#E8D6BF] bg-[#FFF9F2] p-4 shadow-sm sm:p-6">
       <div>
-        <h2 class="font-brand text-3xl font-bold text-nogal">Gestión de productos</h2>
+        <h2 class="font-brand text-2xl font-bold text-nogal sm:text-3xl">Productos</h2>
 
         <p class="mt-2 text-gray-600">
           Registra y administra los artículos artesanales de Toco Madera.
@@ -107,7 +70,7 @@
         role="status"
         class="mb-6 rounded-lg border border-[#E8D6BF] bg-white p-4 text-sm text-nogal"
       >
-        Consultando categorías en MySQL...
+        Cargando categorías…
       </div>
     } @else if (errorCategorias()) {
       <div role="alert" class="mb-6 rounded-lg border border-orange-200 bg-orange-50 p-4">
@@ -129,7 +92,7 @@
          6. FILTROS DE PRODUCTOS
     ========================================== -->
 
-    <section aria-label="Filtros de productos" class="mb-6 rounded-xl bg-white p-5 shadow-sm">
+    <section aria-label="Filtros de productos" class="mb-6 rounded-2xl border border-[#E8D6BF] bg-white p-4 shadow-sm sm:p-5">
       <div class="grid gap-4 md:grid-cols-3">
         <!-- BÚSQUEDA -->
         <div class="md:col-span-2">
@@ -171,11 +134,11 @@
          7. TABLA DE PRODUCTOS
     ========================================== -->
 
-    <section class="rounded-xl bg-white shadow-sm">
+    <section class="min-w-0 rounded-2xl border border-[#E8D6BF] bg-white shadow-sm">
       <!-- ENCABEZADO DE LA TABLA -->
 
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-5">
-        <h3 class="text-lg font-semibold text-nogal">Productos registrados</h3>
+      <div class="flex flex-wrap items-center justify-between gap-3 rounded-t-2xl border-b border-[#E8D6BF] bg-[#FFF9F2] p-4 sm:p-5">
+        <h3 id="titulo-lista-productos" class="text-lg font-bold text-nogal">Productos registrados</h3>
 
         <p class="text-sm text-gray-600">
           Mostrando {{ productosFiltrados().length }} de {{ productos().length }}
@@ -186,7 +149,7 @@
 
       @if (cargando()) {
         <div role="status" class="p-10 text-center text-gray-600">
-          Consultando productos en MySQL...
+          Cargando productos…
         </div>
       } @else if (productosFiltrados().length === 0) {
         <!-- SIN RESULTADOS -->
@@ -197,48 +160,63 @@
       } @else {
         <!-- TABLA RESPONSIVA -->
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-gray-600">
+        <p id="ayuda-lista-productos" class="border-b border-[#E8D6BF] px-4 py-2 text-xs text-gray-700 xl:hidden">
+          Desplaza la tabla horizontalmente para consultar todas las columnas y acciones.
+        </p>
+        <div
+          class="lista-scroll overflow-auto rounded-b-2xl focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#4B2E1F]"
+          role="region"
+          aria-labelledby="titulo-lista-productos"
+          aria-describedby="ayuda-lista-productos"
+          tabindex="0"
+        >
+          <table class="lista-tabla w-full border-separate border-spacing-0 text-left text-sm text-gray-700">
             <thead class="bg-[#F9E9D5] text-xs uppercase text-nogal">
               <tr>
-                <th scope="col" class="px-5 py-4">Producto</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-4 identificador">Producto</th>
 
-                <th scope="col" class="px-5 py-4">Categoría</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-4">Categoría</th>
 
-                <th scope="col" class="px-5 py-4">Precio</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-4">Precio</th>
 
-                <th scope="col" class="px-5 py-4">Grabado</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-4">Grabado</th>
 
-                <th scope="col" class="px-5 py-4">Estado</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-4">Estado</th>
 
-                <th scope="col" class="px-5 py-4">Acciones</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-4">Acciones</th>
               </tr>
             </thead>
 
             <tbody>
               @for (producto of productosFiltrados(); track producto.id_producto) {
-                <tr class="border-t border-gray-100 hover:bg-[#FFF9F2]">
+                <tr class="hover:bg-[#FFF9F2] focus-within:bg-[#FFF9F2]">
                   <!-- NOMBRE Y SKU -->
-                  <td class="px-5 py-4">
-                    <p class="font-semibold text-nogal">
-                      {{ producto.nombre }}
-                    </p>
-
-                    <p class="mt-1 text-xs text-gray-500">SKU: {{ producto.sku }}</p>
-                  </td>
+                  <th scope="row" class="identificador px-3 py-4 font-normal sm:px-4">
+                    <div class="flex items-center gap-3">
+                      @if (fotoProducto(producto.nombre, 'solo'); as foto) {
+                        <img [src]="foto" alt="" width="48" height="48" loading="lazy" decoding="async" class="size-12 shrink-0 rounded-lg bg-crema object-cover" />
+                      } @else {
+                        <span aria-hidden="true" class="grid size-12 shrink-0 place-items-center rounded-lg bg-crema text-lg text-nogal">–</span>
+                      }
+                      <div class="min-w-0">
+                        <p class="font-semibold text-nogal">{{ producto.nombre }}</p>
+                        <p class="mt-1 text-xs text-gray-600">SKU: {{ producto.sku }}</p>
+                      </div>
+                    </div>
+                  </th>
 
                   <!-- CATEGORÍA -->
-                  <td class="px-5 py-4">
+                  <td class="px-3 py-4 sm:px-4">
                     {{ nombreCategoria(producto.id_categoria) }}
                   </td>
 
                   <!-- PRECIO -->
-                  <td class="px-5 py-4 font-semibold text-nogal">
-                    {{ producto.precio_lista | currency: 'MXN' : 'symbol' : '1.2-2' }}
+                  <td class="px-3 py-4 sm:px-4 font-semibold text-nogal">
+                    {{ dinero(producto.precio_lista) }}
                   </td>
 
                   <!-- GRABADO -->
-                  <td class="px-5 py-4">
+                  <td class="px-3 py-4 sm:px-4">
                     @if (producto.permite_grabado) {
                       Sí, hasta
                       {{ producto.max_caracteres_grabado }}
@@ -249,7 +227,7 @@
                   </td>
 
                   <!-- ESTADO -->
-                  <td class="px-5 py-4">
+                  <td class="px-3 py-4 sm:px-4">
                     @if (producto.activo) {
                       <span
                         class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800"
@@ -266,8 +244,8 @@
                   </td>
 
                   <!-- ACCIONES -->
-                  <td class="px-5 py-4">
-                    <div class="flex flex-wrap gap-2">
+                  <td class="px-3 py-4 sm:px-4">
+                    <div class="flex w-max flex-wrap gap-2">
                       <button
                         type="button"
                         (click)="editarProducto(producto)"
@@ -304,7 +282,7 @@
     @if (mostrarFormulario()) {
       <section
         id="formulario-producto"
-        class="mt-8 scroll-mt-6 rounded-xl border border-[#E8D6BF] bg-white p-6 shadow-sm"
+        class="mt-8 scroll-mt-6 rounded-2xl border border-[#E8D6BF] bg-white p-4 shadow-sm sm:p-6"
         aria-labelledby="tituloFormulario"
       >
         <!-- CABECERA DEL FORMULARIO -->
@@ -332,13 +310,13 @@
             class="mb-5 rounded-lg border border-orange-200 bg-orange-50 p-4 text-sm text-nogal"
           >
             No se pueden guardar productos mientras no haya categorías disponibles. Comprueba la
-            conexión con Flask.
+            disponibilidad del servicio.
           </div>
         }
 
         <!-- ERROR DEL FORMULARIO -->
 
-        @if (errorFormulario()) {
+        @if (errorFormulario() && errorFormulario() !== 'El SKU ya está registrado.') {
           <div
             role="alert"
             class="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
@@ -348,6 +326,12 @@
         }
 
         <!-- FORMULARIO ANGULAR -->
+
+        @if (editandoId() !== null) {
+          <div class="contexto-edicion sticky z-30 mb-4 rounded-lg border border-[#E8D6BF] bg-[#FFF9F2] px-3 py-2 text-sm font-semibold text-nogal">
+            <p class="truncate">Editando · {{ formulario.nombre || 'Producto #' + editandoId() }} @if (formulario.sku) { · {{ formulario.sku }} }</p>
+          </div>
+        }
 
         <form
           #formProducto="ngForm"
@@ -384,6 +368,9 @@
             <input
               id="sku"
               name="sku"
+              #skuControl="ngModel"
+              [attr.aria-invalid]="((skuControl.invalid && skuControl.touched) || errorFormulario() === 'El SKU ya está registrado.') ? true : null"
+              [attr.aria-describedby]="((skuControl.invalid && skuControl.touched) || errorFormulario() === 'El SKU ya está registrado.') ? 'error-sku' : null"
               type="text"
               [(ngModel)]="formulario.sku"
               required
@@ -393,6 +380,11 @@
               placeholder="Ej. TM-PROD-007"
               class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm focus:border-terracota focus:ring-terracota"
             />
+            @if ((skuControl.invalid && skuControl.touched) || errorFormulario() === 'El SKU ya está registrado.') {
+              <p id="error-sku" role="alert" class="mt-2 text-sm text-red-700">
+                {{ errorFormulario() === 'El SKU ya está registrado.' ? errorFormulario() : 'Ingresa un SKU válido de al menos dos caracteres.' }}
+              </p>
+            }
           </div>
 
           <!-- NOMBRE -->
@@ -406,12 +398,18 @@
               name="nombre"
               type="text"
               [(ngModel)]="formulario.nombre"
+              #nombreControl="ngModel"
+              [attr.aria-invalid]="nombreControl.touched && formulario.nombre.trim().length < 2 ? 'true' : null"
+              [attr.aria-describedby]="nombreControl.touched && formulario.nombre.trim().length < 2 ? 'producto-nombre-error' : null"
               required
               minlength="2"
               maxlength="120"
               placeholder="Ej. Portallaves artesanal"
               class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm focus:border-terracota focus:ring-terracota"
             />
+            @if (nombreControl.touched && formulario.nombre.trim().length < 2) {
+              <p id="producto-nombre-error" class="mt-1 text-sm text-red-800">Ingresa un nombre de al menos dos caracteres.</p>
+            }
           </div>
 
           <!-- PRECIO -->
@@ -426,11 +424,17 @@
               type="text"
               inputmode="decimal"
               [(ngModel)]="formulario.precio_lista"
+              #precioControl="ngModel"
+              [attr.aria-invalid]="precioControl.touched && (precioControl.invalid || +formulario.precio_lista <= 0) ? 'true' : null"
+              [attr.aria-describedby]="precioControl.touched && (precioControl.invalid || +formulario.precio_lista <= 0) ? 'producto-precio-error' : null"
               required
               pattern="[0-9]+(\.[0-9]{1,2})?"
               placeholder="250.00"
               class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm focus:border-terracota focus:ring-terracota"
             />
+            @if (precioControl.touched && (precioControl.invalid || +formulario.precio_lista <= 0)) {
+              <p id="producto-precio-error" class="mt-1 text-sm text-red-800">Ingresa un precio mayor que cero con hasta dos decimales.</p>
+            }
           </div>
 
           <!-- DESCRIPCIÓN -->
@@ -524,7 +528,7 @@
     ========================================== -->
 
     @if (productoPendiente(); as producto) {
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div class="fixed inset-0 z-50 grid place-items-center overflow-auto bg-black/50 p-4">
         <section
           role="alertdialog"
           aria-modal="true"
@@ -545,11 +549,11 @@
           </p>
 
           <p class="mt-2 text-xs text-gray-500">
-            El registro no se eliminará de MySQL. Los productos inactivos no aparecen en el catálogo
+            El historial del producto se conservará. Los productos inactivos no aparecen en el catálogo
             público.
           </p>
 
-          <div class="mt-6 flex justify-end gap-3">
+          <div class="mt-6 flex flex-wrap justify-end gap-3">
             <button
               type="button"
               (click)="cancelarCambioEstado()"

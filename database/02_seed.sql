@@ -25,7 +25,7 @@ INSERT INTO materiales(id_material,sku,nombre,descripcion,id_unidad,stock_minimo
 INSERT INTO productos (id_producto,id_categoria,sku,nombre,descripcion,precio_lista,permite_grabado,max_caracteres_grabado) VALUES
  (1,1,'TM-PT-01','Portatelefonos','Soporte pequeno de madera con nombre o frase',190,TRUE,40),
  (2,2,'TM-MF-01','Marco para fotografias','Marco de mesa personalizable',315,TRUE,45),
- (3,3,'TM-RC-01','Rodillo de cocina','Grabado solo en asas; acabado apto para alimentos',330,TRUE,25),
+ (3,3,'TM-RC-01','Rodillo de cocina','Grabado personalizable en el cuerpo del rodillo; acabado apto para alimentos',330,TRUE,25),
  (4,2,'TM-RP-01','Repisa pequena','Repisa decorativa con grabado frontal',450,TRUE,40),
  (5,4,'TM-PL-01','Portallaves','Base de madera con ganchos y dedicatoria',350,TRUE,45),
  (6,1,'TM-PE-01','Placa de escritorio','Placa de nombre o frase para escritorio',165,TRUE,50);

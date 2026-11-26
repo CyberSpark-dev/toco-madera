@@ -1,3 +1,8 @@
+import { etiquetaPedido } from '../../core/utils/etiquetas-pedido';
+import { IdentidadTocoMadera } from '../../core/ui/identidad-toco-madera';
+import { mensajeNotificable } from '../../core/services/notificaciones';
+import { mensajeError } from '../../core/utils/mensajes';
+import { formatearDinero } from '../../core/utils/dinero';
 /** Toco Madera | Etapa 3.19.6 - Mis pedidos, pago simulado y seguimiento. */
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -13,17 +18,20 @@ import {
 @Component({
   selector: 'app-mis-pedidos-cliente',
   standalone: true,
-  imports: [RouterLink],
+  imports: [IdentidadTocoMadera, RouterLink],
   templateUrl: './mis-pedidos.html',
   styleUrl: './mis-pedidos.css'
 })
 export class MisPedidosCliente implements OnInit {
+  readonly etiquetaPedido = etiquetaPedido;
+  readonly dinero = formatearDinero;
+
   private readonly api = inject(ClientePedidosService);
   readonly imagenProducto = imagenProducto;
 
   readonly pedidos = signal<PedidoClienteConSeguimiento[]>([]);
   readonly cargando = signal(true);
-  readonly error = signal('');
+  readonly error = mensajeNotificable('error');
   readonly avisoSeguimiento = signal('');
   readonly cancelando = signal<number | null>(null);
   readonly avisoCancelacion = signal('');
@@ -67,9 +75,7 @@ export class MisPedidosCliente implements OnInit {
           ? 'Inicia sesión con una cuenta cliente para consultar tus pedidos.'
           : e.status === 403
             ? 'Esta pantalla requiere una cuenta cliente.'
-            : typeof e.error?.message === 'string'
-              ? e.error.message
-              : 'No pudimos consultar tus pedidos.');
+            : mensajeError(e, 'No pudimos consultar tus pedidos.'));
       }
     });
   }
@@ -82,8 +88,7 @@ export class MisPedidosCliente implements OnInit {
     if (!pedido.puede_cancelar || this.cancelando() !== null) return;
     const aceptado = window.confirm(
       `¿Cancelar el pedido ${pedido.folio}?\n\n` +
-      'AVISO: no habrá devolución de pagos simulados en esta demostración académica. ' +
-      'Los derechos que correspondan conforme a la ley no se ven afectados.\n\n' +
+      'No habrá devolución de pagos simulados en esta demostración académica.\n\n' +
       'Esta acción no se puede deshacer desde la aplicación.'
     );
     if (!aceptado) return;
@@ -92,34 +97,21 @@ export class MisPedidosCliente implements OnInit {
     this.avisoCancelacion.set('');
     this.api.cancelar(pedido.id_pedido).subscribe({
       next: respuesta => {
+        this.pedidos.update(pedidos => pedidos.map(actual => actual.id_pedido === pedido.id_pedido ? {
+          ...actual,
+          estado: respuesta.estado,
+          puede_cancelar: false,
+          seguimiento: undefined,
+        } : actual));
         this.cancelando.set(null);
         this.avisoCancelacion.set(respuesta.message);
         this.cargar();
       },
       error: (e: HttpErrorResponse) => {
         this.cancelando.set(null);
-        this.error.set(typeof e.error?.message === 'string'
-          ? e.error.message : 'No se pudo cancelar. Actualiza tus pedidos e inténtalo nuevamente.');
+        this.error.set(mensajeError(e, 'No se pudo cancelar. Actualiza tus pedidos e inténtalo nuevamente.'));
       }
     });
-  }
-
-  /** Texto de autorización independiente del estado comercial o del pago. */
-  estadoAutorizacionVisible(pedido: PedidoClienteConSeguimiento): string {
-    switch (pedido.autorizacion?.estado) {
-      case 'APROBADO': return 'APROBADO';
-      case 'RECHAZADO': return 'RECHAZADO';
-      case 'POR_REVISAR': return 'POR REVISAR';
-      case 'HISTORICO_ENTREGADO': return 'HISTÓRICO ENTREGADO';
-      default: return 'NO DISPONIBLE';
-    }
-  }
-
-  dinero(valor: string | number | null | undefined): string {
-    const numero = Number(valor);
-    return Number.isFinite(numero)
-      ? numero.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
-      : 'Importe no disponible';
   }
 
   /** Nunca inferimos que un pedido está pagado si falta su resumen. */

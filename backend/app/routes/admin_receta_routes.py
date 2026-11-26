@@ -629,7 +629,7 @@ def crear_receta():
             "success": False,
             "message": (
                 "No se pudo registrar la receta "
-                "por una restricción de MySQL."
+                "por un conflicto con los datos existentes."
             )
         }), 409
 

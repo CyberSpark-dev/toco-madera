@@ -3,13 +3,14 @@
   <header class="bg-[#4B2E1F] px-5 py-5 text-white">
     <nav class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
       <div>
-        <h1 class="text-xl font-bold">Toco Madera</h1>
+        <app-identidad-toco-madera />
         <p class="text-sm text-[#F9E9D5]">Catálogo y carrito de compras</p>
       </div>
       <div class="flex flex-wrap gap-3 text-sm">
         <a routerLink="/" class="rounded-lg border border-white/40 px-4 py-2">Inicio</a>
         <a routerLink="/cliente/mis-pedidos" class="rounded-lg border border-white/40 px-4 py-2">Mis pedidos</a>
-        <a routerLink="/cliente/checkout" class="rounded-lg bg-[#A65A2E] px-4 py-2 font-semibold">
+        <a [routerLink]="hayCantidadesInvalidas() || edicionGrabado ? null : '/cliente/checkout'"
+          [attr.aria-disabled]="(hayCantidadesInvalidas() || !!edicionGrabado) || null" class="rounded-lg bg-[#A65A2E] px-4 py-2 font-semibold">
           Checkout ({{ carrito.cantidadTotal() }})
         </a>
       </div>
@@ -87,40 +88,39 @@
           <h3 class="text-xl font-bold">Configurar: {{ producto.nombre }}</h3>
           <button type="button" (click)="cancelarSeleccion()" class="font-semibold text-gray-600">Cerrar</button>
         </div>
-        <!-- Vista limpia del artículo que se va a personalizar. -->
-        @if (imagenProducto(producto.nombre, 'solo'); as foto) {
-          <div class="mt-5 rounded-xl bg-[#FFF9F2] p-3">
-            <img [src]="foto" [alt]="'Vista demostrativa de ' + producto.nombre"
-              class="mx-auto h-64 w-full max-w-lg object-contain" />
-            <p class="mt-2 text-center text-xs text-gray-500">
-              Imagen de referencia. Tu texto de grabado se registrará al confirmar la compra.
-            </p>
-          </div>
-        }
+        <app-vista-grabado class="mx-auto mt-5 block max-w-sm" [nombre]="producto.nombre" [sku]="producto.sku"
+          [permite]="!!producto.permite_grabado" [texto]="errorGrabado(producto, grabado) ? '' : normalizarGrabado(grabado)" />
         <form (ngSubmit)="agregar()" class="mt-5 grid gap-4 md:grid-cols-2">
           <div>
             <label for="cantidad" class="mb-2 block text-sm font-semibold">Cantidad (1–100)</label>
             <input id="cantidad" name="cantidad" type="number" min="1" max="100" step="1" required
-              [(ngModel)]="cantidad" class="w-full rounded-lg border border-gray-300 p-3" />
+              [ngModel]="cantidad" (ngModelChange)="cambiarCantidad($event)"
+              [attr.aria-invalid]="errorCantidad() ? 'true' : null" [attr.aria-describedby]="errorCantidad() ? 'error-cantidad' : null"
+              class="w-full rounded-lg border border-gray-300 p-3" />
+            @if (errorCantidad()) { <p id="error-cantidad" class="mt-1 text-sm text-red-800">{{ errorCantidad() }}</p> }
           </div>
-          <div>
-            <label for="grabado" class="mb-2 block text-sm font-semibold">Texto de grabado</label>
-            <input id="grabado" name="grabado" type="text" [(ngModel)]="grabado"
-              [disabled]="!producto.permite_grabado" [attr.maxlength]="producto.max_caracteres_grabado"
-              [placeholder]="producto.permite_grabado ? 'Texto a grabar' : 'No disponible para este producto'"
-              class="w-full rounded-lg border border-gray-300 p-3 disabled:bg-gray-100" />
-            @if (producto.permite_grabado) {
-              <p class="mt-1 text-xs text-gray-500">Máximo {{ producto.max_caracteres_grabado }} caracteres.</p>
-            }
-          </div>
+          @if (producto.permite_grabado) {
+            @let problema = errorGrabado(producto, grabado);
+            <div>
+              <label for="grabado" class="mb-2 block text-sm font-semibold">Texto de grabado</label>
+              <textarea id="grabado" name="grabado" [(ngModel)]="grabado" rows="2"
+                placeholder="Texto a grabar" aria-describedby="ayuda-grabado"
+                [attr.aria-invalid]="problema ? 'true' : null"
+                class="w-full rounded-lg border border-gray-300 p-3"></textarea>
+              <p id="ayuda-grabado" class="mt-1 text-xs" [class.text-red-800]="problema" aria-live="polite">
+                {{ problema || 'Máximo ' + maximoGrabado(producto) + ' caracteres. Puedes usar saltos de línea.' }}
+              </p>
+
+            </div>
+          }
           <div class="md:col-span-2">
             <label for="notas" class="mb-2 block text-sm font-semibold">Notas del artículo (opcional)</label>
             <textarea id="notas" name="notas" rows="2" maxlength="200" [(ngModel)]="notas"
               class="w-full rounded-lg border border-gray-300 p-3"></textarea>
           </div>
           <div class="md:col-span-2 flex flex-wrap items-center justify-between gap-3">
-            <p class="text-lg font-bold">Subtotal estimado: {{ precio(+producto.precio_lista * cantidad) }}</p>
-            <button type="submit" [disabled]="carrito.idClienteActual() === null"
+            <p class="text-lg font-bold">Subtotal estimado: {{ precio(+producto.precio_lista * (cantidad ?? 0)) }}</p>
+            <button type="submit" [disabled]="carrito.idClienteActual() === null || !!errorGrabado(producto, grabado)"
               class="rounded-lg bg-[#A65A2E] px-6 py-3 font-bold text-white hover:bg-[#4B2E1F] disabled:cursor-not-allowed disabled:opacity-50">
               Agregar al carrito
             </button>
@@ -133,7 +133,7 @@
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h3 class="text-2xl font-bold">Mi carrito ({{ carrito.cantidadTotal() }} unidades)</h3>
         @if (!carrito.vacio()) {
-          <button type="button" (click)="carrito.vaciar()" class="text-sm font-semibold text-red-700">Vaciar carrito</button>
+          <button type="button" (click)="carrito.vaciar(); edicionGrabado = null" class="text-sm font-semibold text-red-700">Vaciar carrito</button>
         }
       </div>
 
@@ -151,20 +151,43 @@
             <div class="grid gap-4 rounded-lg border border-gray-200 p-4 md:grid-cols-4">
               <!-- En la línea del carrito también se utiliza la fotografía limpia. -->
               <div class="md:col-span-2 flex flex-col gap-3 sm:flex-row">
-                @if (imagenProducto(item.nombre, 'solo'); as foto) {
-                  <img [src]="foto" [alt]="'Artículo en carrito: ' + item.nombre"
-                    class="h-28 w-full rounded-lg bg-[#FFF9F2] object-contain sm:w-28" loading="lazy" />
-                }
-                <div>
+                @let borrador = edicionGrabado?.idLinea === item.id_linea ? edicionGrabado : null;
+                <app-vista-grabado class="w-full max-w-48 shrink-0 sm:w-32" [nombre]="item.nombre" [sku]="item.sku"
+                  [permite]="!!item.permite_grabado"
+                  [texto]="borrador ? (errorGrabado(item, borrador.texto) ? '' : normalizarGrabado(borrador.texto)) : (item.texto_grabado ?? '')" />
+                <div class="min-w-0">
                   <p class="font-bold">{{ item.nombre }}</p>
                   <p class="text-xs text-gray-500">{{ item.sku }}</p>
                   @if (item.texto_grabado) {
-                    <p class="mt-2 text-sm">Grabado: <strong>{{ item.texto_grabado }}</strong></p>
+                    <p class="mt-2 text-sm">Grabado: <strong class="whitespace-pre-wrap [overflow-wrap:anywhere]">{{ item.texto_grabado }}</strong></p>
                   }
+
                   @if (item.notas) {
                     <p class="mt-1 text-xs text-gray-600">Notas: {{ item.notas }}</p>
                   }
-                  <button type="button" (click)="carrito.quitar(item.id_linea)"
+                  @if (item.permite_grabado) {
+                    @if (borrador) {
+                      @let problema = errorGrabado(item, borrador.texto);
+                      <form (submit)="guardarGrabado($event)" class="mt-3">
+                        <label [for]="'grabado-' + item.id_linea" class="block text-sm font-semibold">Editar grabado</label>
+                        <textarea [id]="'grabado-' + item.id_linea" name="texto" rows="2" [(ngModel)]="borrador.texto"
+                          [attr.aria-invalid]="problema ? 'true' : null" [attr.aria-describedby]="'ayuda-' + item.id_linea"
+                          class="mt-1 w-full rounded-lg border border-gray-300 p-2"></textarea>
+                        <p [id]="'ayuda-' + item.id_linea" class="text-xs" [class.text-red-800]="problema" aria-live="polite">
+                          {{ problema || 'Máximo ' + maximoGrabado(item) + ' caracteres.' }}
+                        </p>
+
+                        <div class="mt-2 flex flex-wrap gap-2">
+                          <button type="submit" [disabled]="!!problema" class="rounded-lg bg-[#4B2E1F] px-3 py-2 text-sm text-white disabled:opacity-50">Guardar grabado</button>
+                          <button type="button" (click)="edicionGrabado = null" class="rounded-lg border px-3 py-2 text-sm">Cancelar edición</button>
+                        </div>
+                      </form>
+                    } @else {
+                      <button type="button" (click)="editarGrabado(item)"
+                        [disabled]="!!edicionGrabado" class="mt-2 block text-sm font-semibold underline">Editar grabado</button>
+                    }
+                  }
+                  <button type="button" (click)="quitarArticulo(item.id_linea)"
                     class="mt-3 text-sm font-semibold text-red-700">Eliminar artículo</button>
                 </div>
               </div>
@@ -172,10 +195,15 @@
                 <label [for]="'cantidad-' + item.id_linea" class="mb-2 block text-xs font-semibold">Cantidad</label>
                 <input [id]="'cantidad-' + item.id_linea" type="number" min="1" max="100" step="1"
                   [ngModel]="item.cantidad" (ngModelChange)="cantidadActualizada(item.id_linea, $event)"
+                  [attr.aria-invalid]="cantidadesInvalidas()[item.id_linea] ? 'true' : null"
+                  [attr.aria-describedby]="cantidadesInvalidas()[item.id_linea] ? 'error-linea-' + item.id_linea : null"
                   class="w-full rounded-lg border border-gray-300 p-2" />
               </div>
               <div class="text-right md:text-left">
                 <p class="text-sm text-gray-500">{{ precio(item.precio_estimado) }} / unidad</p>
+                @if (cantidadesInvalidas()[item.id_linea]; as motivo) {
+                  <p [id]="'error-linea-' + item.id_linea" class="mt-1 text-sm text-red-800">{{ motivo }}</p>
+                }
                 <p class="mt-2 text-lg font-bold">{{ precio(+item.precio_estimado * item.cantidad) }}</p>
               </div>
             </div>
@@ -185,9 +213,14 @@
           <div>
             <p class="text-sm text-gray-600">Total estimado (sin envío ni descuentos)</p>
             <p class="text-2xl font-bold">{{ precio(carrito.subtotalEstimado()) }}</p>
-            <p class="mt-1 text-xs text-gray-500">Flask recalculará los importes al confirmar.</p>
+            <p class="mt-1 text-xs text-gray-500">Verás los importes definitivos al confirmar el pedido.</p>
           </div>
-          <a routerLink="/cliente/checkout" class="rounded-lg bg-[#718063] px-6 py-3 font-bold text-white hover:bg-[#4B2E1F]">
+          @if (hayCantidadesInvalidas()) {
+            <p class="text-sm font-semibold text-red-800">Corrige las cantidades indicadas antes de continuar.</p>
+          }
+          @if (edicionGrabado) { <p class="text-sm font-semibold">Guarda o cancela la edición del grabado para continuar.</p> }
+          <a [routerLink]="hayCantidadesInvalidas() || edicionGrabado ? null : '/cliente/checkout'"
+            [attr.aria-disabled]="(hayCantidadesInvalidas() || !!edicionGrabado) || null" class="rounded-lg bg-[#718063] px-6 py-3 font-bold text-white hover:bg-[#4B2E1F]">
             Continuar al pago simulado
           </a>
         </div>

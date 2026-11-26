@@ -1,17 +1,20 @@
+import { IdentidadTocoMadera } from '../../core/ui/identidad-toco-madera';
+import { mensajeNotificable } from '../../core/services/notificaciones';
+import { mensajeError } from '../../core/utils/mensajes';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../core/services/auth';
 import { Cuentas, CambiosCuenta } from '../../core/services/cuentas';
-@Component({selector:'app-mi-cuenta',standalone:true,imports:[FormsModule,RouterLink],templateUrl:'./mi-cuenta.html'})
+@Component({selector:'app-mi-cuenta',standalone:true,imports: [IdentidadTocoMadera, FormsModule,RouterLink],templateUrl:'./mi-cuenta.html'})
 export class MiCuenta implements OnInit {
   private readonly cuentas=inject(Cuentas);
   private readonly router=inject(Router);
   readonly auth=inject(Auth);
   readonly guardando=signal(false);
-  readonly error=signal('');
-  readonly aviso=signal('');
+  readonly error = mensajeNotificable('error');
+  readonly aviso = mensajeNotificable('aviso');
   datos:CambiosCuenta={nombre:'',correo:'',telefono:''};
   actual=''; nueva=''; confirmarNueva='';
   ngOnInit(){ if(!this.auth.autenticado()){this.router.navigateByUrl('/login');return;} this.consultar(); }
@@ -26,5 +29,5 @@ export class MiCuenta implements OnInit {
       error:e=>{this.guardando.set(false);this.error.set(this.mensaje(e));}
     });
   }
-  private mensaje(e:HttpErrorResponse){return e.error?.message??`Error HTTP ${e.status}.`;}
+  private mensaje(e:HttpErrorResponse){return mensajeError(e, 'No pudimos completar los cambios de tu cuenta. Inténtalo nuevamente.');}
 }

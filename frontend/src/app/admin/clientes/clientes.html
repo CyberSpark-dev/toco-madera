@@ -1,14 +1,48 @@
 <main class="min-h-screen bg-crema px-5 py-10 text-nogal">
   <div class="mx-auto max-w-7xl">
     <div class="mb-8 flex flex-wrap items-center justify-between gap-3">
-      <div><h1 class="text-3xl font-bold">Gestión de clientes</h1><p class="mt-2 text-gray-600">Información, compras históricas y estado de las cuentas.</p></div>
-      <a routerLink="/admin/dashboard" class="rounded-lg bg-nogal px-5 py-3 font-semibold text-white">Volver al dashboard</a>
+      <div><h1 class="text-3xl font-bold">Clientes</h1><p class="mt-2 text-gray-600">Información, compras históricas y estado de las cuentas.</p></div>
     </div>
+    <section class="mb-8" aria-labelledby="frecuencia-clientes">
+      <h2 id="frecuencia-clientes" class="font-brand text-xl font-bold">Frecuencia de compra</h2>
+      <p class="mt-1 text-sm text-gray-700">Pedidos confirmados por cliente, incluidos los que ya pasaron a producción, están listos o se entregaron.</p>
+      @if (cargando()) {
+        <p role="status" class="mt-4 text-sm text-gray-700">Cargando estadísticas de clientes…</p>
+      } @else if (!errorCarga()) {
+        @let frecuencia = frecuenciaCompras();
+        @if (frecuencia.empate) {
+          <p class="mt-3 rounded-lg bg-[#F9E9D5] px-3 py-2 text-sm">
+            Hay un empate de frecuencia entre ambos grupos. Los clientes empatados se asignan por nombre y después por identificador.
+          </p>
+        }
+        <div class="mt-4 grid gap-4 md:grid-cols-2">
+          @for (grupo of frecuencia.grupos; track grupo.titulo) {
+            <article class="min-w-0 rounded-2xl border border-[#E8D6BF] bg-white p-4 shadow-sm sm:p-5">
+              <h3 class="font-brand font-semibold">{{ grupo.titulo }}</h3>
+              <ol class="mt-4 space-y-3">
+                @for (cliente of grupo.clientes; track cliente.id_usuario) {
+                  <li>
+                    <div class="mb-1 flex items-baseline justify-between gap-2 text-sm">
+                      <span class="min-w-0 wrap-anywhere">{{ cliente.nombre }}</span>
+                      <span class="shrink-0 font-semibold tabular-nums">{{ cliente.pedidos_validos }} {{ cliente.pedidos_validos === 1 ? 'compra' : 'compras' }}</span>
+                    </div>
+                    <div aria-hidden="true" class="h-2.5 rounded-full bg-[#F9E9D5]">
+                      <div class="h-full rounded-full bg-terracota" [style.width.%]="100 * cliente.pedidos_validos / frecuencia.maximo"></div>
+                    </div>
+                  </li>
+                } @empty {
+                  <li class="text-sm text-gray-600">{{ grupo.vacio }}</li>
+                }
+              </ol>
+            </article>
+          }
+        </div>
+      }
+    </section>
     <div class="mb-6 flex flex-wrap gap-3">
       <input type="search" aria-label="Buscar clientes" placeholder="Buscar nombre, correo o teléfono" [ngModel]="filtro()" (ngModelChange)="filtro.set($event)" class="w-full max-w-md rounded-lg border border-gray-300 bg-white p-3"/>
       <button (click)="cargar()" type="button" class="rounded-lg bg-terracota px-5 py-3 font-semibold text-white">Actualizar</button>
     </div>
-    @if (cargando()) { <p role="status">Consultando clientes...</p> }
     @if (error()) { <p role="alert" class="mb-4 rounded-lg bg-red-50 p-4 text-red-800">{{ error() }}</p> }
     @if (exito()) { <p role="status" class="mb-4 rounded-lg bg-green-50 p-4 text-green-800">{{ exito() }}</p> }
     <div class="grid gap-5 lg:grid-cols-2">
@@ -20,7 +54,7 @@
           </div>
           <div class="mt-4 grid grid-cols-2 gap-3 rounded-lg bg-[#FFF9F2] p-4">
             <div><p class="text-xs text-gray-600">Pedidos válidos</p><p class="text-xl font-bold">{{ c.pedidos_validos }}</p></div>
-            <div><p class="text-xs text-gray-600">Total de compras*</p><p class="text-xl font-bold">{{ c.total_compras | currency:'MXN':'symbol':'1.2-2' }}</p></div>
+            <div><p class="text-xs text-gray-600">Total de compras*</p><p class="text-xl font-bold">{{ dinero(c.total_compras) }}</p></div>
           </div>
           <h3 class="mt-4 font-semibold">Productos más comprados</h3>
           @if (c.productos_mas_comprados.length) {

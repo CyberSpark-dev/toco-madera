@@ -2,7 +2,7 @@
 <div class="min-h-screen bg-[#F9E9D5] px-5 py-10 text-[#4B2E1F]">
   <main class="mx-auto max-w-5xl space-y-5">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="text-3xl font-bold">Mis pedidos</h1>
+      <app-identidad-toco-madera class="block" /><h1 class="text-3xl font-bold">Mis pedidos</h1>
       <div class="flex gap-3">
         <a routerLink="/cliente/carrito" class="rounded-lg border border-[#A65A2E] px-4 py-2 font-semibold">Catálogo</a>
         <button type="button" (click)="cargar()" [disabled]="cargando()"
@@ -38,7 +38,7 @@
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
               <h2 class="break-all text-lg font-bold sm:text-xl">{{ pedido.folio }}</h2>
-              <p class="mt-1 text-sm text-gray-600">{{ fechaVisible(pedido.fecha) }} · {{ pedido.seguimiento?.estado || pedido.estado }}</p>
+              <p class="mt-1 text-sm text-gray-600">{{ fechaVisible(pedido.fecha) }} · {{ etiquetaPedido(pedido.seguimiento?.estado || pedido.estado) }}</p>
               <p class="text-sm text-gray-600">Pago: {{ pedido.modalidad_pago === 'ANTICIPO_50' ? '50 % de anticipo y 50 % contra entrega' : 'Pago total' }}</p>
             </div>
             <span class="rounded-full px-3 py-1 text-sm font-bold"
@@ -46,15 +46,14 @@
               [class.text-green-900]="(pedido.seguimiento?.estado || pedido.estado) === 'LISTO' || (pedido.seguimiento?.estado || pedido.estado) === 'ENTREGADO'"
               [class.bg-amber-100]="(pedido.seguimiento?.estado || pedido.estado) !== 'LISTO' && (pedido.seguimiento?.estado || pedido.estado) !== 'ENTREGADO'"
               [class.text-amber-900]="(pedido.seguimiento?.estado || pedido.estado) !== 'LISTO' && (pedido.seguimiento?.estado || pedido.estado) !== 'ENTREGADO'">
-              {{ pedido.seguimiento?.estado || pedido.estado }}
+              {{ etiquetaPedido(pedido.seguimiento?.estado || pedido.estado) }}
             </span>
           </div>
 
           @if (pedido.estado === 'CANCELADO') {
             <div role="status" class="rounded-lg border border-red-200 bg-red-50 p-4 text-red-900">
-              <p class="font-bold">Pedido cancelado por el cliente.</p>
-              <p class="mt-1 text-sm">No se procesan devoluciones de pagos simulados en esta demostración.
-                Los derechos legales aplicables no se ven afectados.</p>
+              <p class="font-bold">Pedido cancelado.</p>
+              <p class="mt-1 text-sm">Los pagos simulados permanecen en el historial.</p>
             </div>
           } @else if (pedido.puede_cancelar) {
             <div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
@@ -82,7 +81,7 @@
               [class.text-red-900]="pedido.autorizacion?.estado === 'RECHAZADO'"
               [class.bg-amber-100]="pedido.autorizacion?.estado === 'POR_REVISAR'"
               [class.text-amber-900]="pedido.autorizacion?.estado === 'POR_REVISAR'">
-              {{ estadoAutorizacionVisible(pedido) }}
+              {{ etiquetaPedido(pedido.autorizacion?.estado) }}
             </span>
           </div>
           @if (pedido.autorizacion?.estado === 'APROBADO') {
@@ -124,7 +123,7 @@
                 <p class="text-sm">{{ pedido.estado === 'CANCELADO' ? 'Saldo histórico (sin cobro)' : (saldoPendiente(pedido) ? 'Saldo por pagar' : 'Saldo pendiente') }}</p>
                 <p class="text-xl font-bold" [class.text-orange-900]="saldoPendiente(pedido)"
                   [class.text-green-800]="!saldoPendiente(pedido)">{{ dinero(pedido.resumen.saldo) }}</p>
-                <p class="text-xs">{{ pedido.estado === 'CANCELADO' ? 'Pedido cancelado; no solicitar pago pendiente' : (saldoPendiente(pedido) ? 'Liquidación simulada contra entrega' : 'Sin saldo pendiente') }}</p>
+                <p class="text-xs">{{ pedido.estado === 'CANCELADO' ? 'No hay un pago pendiente por realizar' : (saldoPendiente(pedido) ? 'Liquidación simulada contra entrega' : 'Sin saldo pendiente') }}</p>
               </div>
             </div>
           } @else {
@@ -150,7 +149,7 @@
                   } @else if (seguimiento.estado === 'LISTO') {
                     Listo para recoger
                   } @else if (seguimiento.estado_entrega) {
-                    {{ seguimiento.estado_entrega.replaceAll('_', ' ') }}
+                    {{ etiquetaPedido(seguimiento.estado_entrega) }}
                   } @else {
                     Pendiente de programación
                   }
@@ -190,12 +189,13 @@
                     <p class="font-bold">{{ item.nombre_producto || ('Producto #' + item.id_producto) }}</p>
                     <p>Cantidad: {{ item.cantidad }} · Precio unitario: {{ dinero(item.precio_unitario_acordado) }}</p>
                     @if (item.texto_grabado) { <p>Grabado solicitado: <strong>{{ item.texto_grabado }}</strong></p> }
+
                     <p class="mt-1 text-xs text-gray-500">Imagen de muestra; el grabado solicitado puede ser diferente.</p>
                   </div>
                 </div>
               }
               @for (pago of pedido.pagos; track pago.id_pago) {
-                <p class="text-sm">Pago {{ pago.estado }}: {{ dinero(pago.monto) }} · {{ pago.metodo }}</p>
+                <p class="text-sm">Pago {{ etiquetaPedido(pago.estado) }}: {{ dinero(pago.monto) }} · {{ etiquetaPedido(pago.metodo) }}</p>
               }
             </div>
           </details>

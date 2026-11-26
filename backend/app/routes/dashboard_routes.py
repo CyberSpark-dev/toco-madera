@@ -117,4 +117,4 @@ def estadisticas():
     except SQLAlchemyError:
         db.session.rollback()
         current_app.logger.exception('No fue posible cargar las estadísticas.')
-        return jsonify(success=False, message='Error al consultar estadísticas en MySQL.'), 500
+        return jsonify(success=False, message='No pudimos consultar las estadísticas. Intenta nuevamente.'), 500

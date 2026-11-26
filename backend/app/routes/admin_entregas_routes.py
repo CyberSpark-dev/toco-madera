@@ -191,9 +191,9 @@ def marcar_listo(id_pedido):
         if not p:
             db.session.rollback();return jsonify(success=False,message='Pedido no encontrado.'),404
         if p['estado'] not in ('CONFIRMADO','EN_PRODUCCION'):
-            db.session.rollback();return jsonify(success=False,message='El pedido no admite cambiar a LISTO.'),409
+            db.session.rollback();return jsonify(success=False,message='El pedido no admite marcarse como listo.'),409
         if not _autorizado_para_entrega(id_pedido):
-            db.session.rollback();return jsonify(success=False,message='Debes autorizar el pedido antes de marcarlo LISTO.'),409
+            db.session.rollback();return jsonify(success=False,message='Autoriza el pedido antes de marcarlo como listo.'),409
         correcto,_,mensaje=_verificar_productos(id_pedido, bloquear=True)
         if not correcto:
             db.session.rollback();return jsonify(success=False,message=mensaje),409
@@ -228,7 +228,7 @@ def liquidar_saldo_simulado(id_pedido):
         db.session.commit()
         return jsonify(success=True,id_pedido=id_pedido,monto=str(saldo),
             metodo='TRANSFERENCIA_SIMULADA',
-            message='Saldo liquidado mediante pago SIMULADO, sin cobro bancario real.'),200
+            message='Saldo liquidado con un pago simulado.'),200
     except IntegrityError:
         db.session.rollback()
         return jsonify(success=False,message='El saldo ya fue liquidado.'),409
@@ -248,7 +248,7 @@ def entregar_pedido(id_pedido):
         if not p:
             db.session.rollback();return jsonify(success=False,message='Pedido no encontrado.'),404
         if p['estado'] != 'LISTO':
-            db.session.rollback();return jsonify(success=False,message='Solo se entrega un pedido LISTO.'),409
+            db.session.rollback();return jsonify(success=False,message='Solo puedes entregar pedidos listos.'),409
         e=db.session.execute(text('''SELECT id_entrega,estado,programada,punto_recoleccion
                                     FROM entregas WHERE id_pedido=:id FOR UPDATE'''),{'id':id_pedido}).mappings().first()
         if not e or e['estado']!='PROGRAMADA' or not e['punto_recoleccion']:

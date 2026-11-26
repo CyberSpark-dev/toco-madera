@@ -1,0 +1,39 @@
+:host { display: block; min-width: 0; }
+figure { margin: 0; }
+.foto-grabado {
+  position: relative;
+  container-type: inline-size;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: .7rem;
+  background: #fff9f2;
+}
+img { display: block; width: 100%; height: auto; }
+.capa-grabado {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  text-align: center;
+  color: #391c10;
+  font-family: 'Great Vibes', 'Segoe Script', cursive;
+  line-height: 1.06;
+  text-shadow: 0 .13cqw .14cqw #f8dba275;
+  mix-blend-mode: multiply;
+}
+.adorno-grabado { position: absolute; left: 25%; top: 49.3%; width: 50%; height: 4.5%; mix-blend-mode: multiply; pointer-events: none; }
+.capa-grabado span, .texto-completo { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
+.estado-foto, .muestra-generica { padding: .65rem; border-radius: .6rem; background: #edf0e7; color: #4b2e1f; }
+.muestra-generica { margin-top: .4rem; font-size: .8rem; }
+.muestra-generica .texto-completo { margin-top: .3rem; font-size: 1rem; }
+.cargando { position: absolute; inset: 0; display: grid; place-items: center; font-size: .8rem; color: #594537; }
+figcaption { margin-top: .35rem; color: #584538; font-size: .75rem; }
+
+
+@font-face {
+  font-family: 'Great Vibes';
+  src: url('/productos/grabado/GreatVibes-Regular.ttf') format('truetype');
+  font-display: swap;
+}

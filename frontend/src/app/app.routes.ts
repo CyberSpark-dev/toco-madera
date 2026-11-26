@@ -11,10 +11,6 @@ import { Routes } from '@angular/router';
 import { adminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
-  // ====================================================
-  // 1. PÁGINA PRINCIPAL
-  // ====================================================
-
   {
     path: '',
     pathMatch: 'full',
@@ -22,197 +18,121 @@ export const routes: Routes = [
 
     loadComponent: () => import('./cliente/inicio/inicio').then((m) => m.Inicio),
   },
-
-  // ====================================================
-  // 2. INICIO DE SESIÓN
-  // ====================================================
-
   {
     path: 'login',
     title: 'Toco Madera | Iniciar sesión',
 
     loadComponent: () => import('./auth/login/login').then((m) => m.Login),
   },
-
-  // ====================================================
-  // 3. REGISTRO DE CLIENTES
-  // ====================================================
-
   {
     path: 'registro',
     title: 'Toco Madera | Crear cuenta',
 
     loadComponent: () => import('./auth/registro/registro').then((m) => m.Registro),
   },
-
-  // ====================================================
-  // 4. DASHBOARD ADMINISTRATIVO
-  // ====================================================
-
-  {
-    path: 'admin/dashboard',
-    title: 'Toco Madera | Dashboard',
-
-    canActivate: [adminGuard],
-
-    loadComponent: () => import('./admin/dashboard/dashboard').then((m) => m.Dashboard),
-  },
-
-  // ====================================================
-  // 5. ADMINISTRACIÓN DE PRODUCTOS
-  // ====================================================
-
-  {
-    path: 'admin/productos',
-    title: 'Toco Madera | Gestión de productos',
-
-    // Solo usuarios con sesión ADMIN.
-    canActivate: [adminGuard],
-
-    loadComponent: () => import('./admin/productos/productos').then((m) => m.ProductosAdmin),
-  },
-
-  /**
-   * ==================================================
-   * ETAPA 3.16 - ADMINISTRACIÓN DE PROVEEDORES
-   * ==================================================
-   *
-   * Ruta protegida mediante adminGuard.
-   * El componente se carga únicamente al navegar
-   * a la sección administrativa correspondiente.
-   */
-
-  {
-    path: 'admin/proveedores',
-
-    title: 'Toco Madera | Gestión de proveedores',
-
-    // Impedir el acceso sin una sesión ADMIN.
-    canActivate: [adminGuard],
-
-    // Carga diferida del componente.
-    loadComponent: () => import('./admin/proveedores/proveedores').then((m) => m.ProveedoresAdmin),
-  },
-
-  /**
-   * ==================================================
-   * ETAPA 3.16 - MATERIAS PRIMAS
-   * ==================================================
-   *
-   * La ruta se encuentra protegida mediante
-   * el guard administrativo existente.
-   */
-
-  {
-    path: 'admin/materiales',
-
-    title: 'Toco Madera | Materias primas',
-
-    canActivate: [adminGuard],
-
-    loadComponent: () => import('./admin/materiales/materiales').then((m) => m.MaterialesAdmin),
-  },
-
-  /**
-   * ==================================================
-   * ETAPA 3.17 - GESTIÓN ADMINISTRATIVA DE COMPRAS
-   * ==================================================
-   */
-
-  {
-    path: 'admin/compras',
-
-    title: 'Toco Madera | Compras',
-
-    canActivate: [adminGuard],
-
-    loadComponent: () => import('./admin/compras/compras').then((m) => m.ComprasAdmin),
-  },
-
-  /**
-   * ==================================================
-   * ETAPA 3.17.6 - INVENTARIO ADMINISTRATIVO
-   * ==================================================
-   */
-
-  {
-    path: 'admin/inventario',
-
-    title: 'Toco Madera | Inventario',
-
-    canActivate: [adminGuard],
-
-    loadComponent: () => import('./admin/inventario/inventario').then((m) => m.InventarioAdmin),
-  },
-
-  /**
-   * ==================================================
-   * ETAPA 3.17.7 - RECETAS DE FABRICACIÓN
-   * ==================================================
-   */
-
-  {
-    path: 'admin/recetas',
-
-    title: 'Toco Madera | Recetas',
-
-    canActivate: [adminGuard],
-
-    loadComponent: () => import('./admin/recetas/recetas').then((m) => m.RecetasAdmin),
-  },
-
-  /**
-   * ==================================================
-   * TOCO MADERA - ETAPA 3.18
-   * RUTAS DEL CLIENTE
-   * ==================================================
-   */
-
   {
     path: 'cliente/carrito',
     title: 'Toco Madera | Carrito',
     loadComponent: () => import('./cliente/carrito/carrito').then((m) => m.CarritoCliente),
   },
-
   {
     path: 'cliente/checkout',
-    title: 'Toco Madera | Checkout',
+    title: 'Toco Madera | Confirmación del pedido',
     loadComponent: () => import('./cliente/checkout/checkout').then((m) => m.CheckoutCliente),
   },
-
   {
     path: 'cliente/mis-pedidos',
     title: 'Toco Madera | Mis pedidos',
     loadComponent: () =>
       import('./cliente/mis-pedidos/mis-pedidos').then((m) => m.MisPedidosCliente),
   },
-
-  // Etapa 3.20.2 - revisión y autorización administrativa.
-  {
-    path: 'admin/pedidos',
-    title: 'Toco Madera | Revision de pedidos',
-    canActivate: [adminGuard],
-    loadComponent: () => import('./admin/pedidos/pedidos').then((m) => m.PedidosAdmin),
-  },
-
-  // Etapa 3.20.4: flujo visual completo de taller, producción y entregas.
-  {
-    path: 'admin/operaciones',
-    title: 'Toco Madera | Taller y entregas',
-    canActivate: [adminGuard],
-    loadComponent: () => import('./admin/operaciones/operaciones').then((m) => m.OperacionesAdmin),
-  },
-
-  // ETAPA 3.20.8: administración de clientes y perfil.
-  { path:'admin/clientes', title:'Toco Madera | Clientes', canActivate:[adminGuard],
-    loadComponent:()=>import('./admin/clientes/clientes').then(m=>m.ClientesAdmin) },
   { path:'cliente/mi-cuenta', title:'Toco Madera | Mi cuenta',
     loadComponent:()=>import('./cliente/mi-cuenta/mi-cuenta').then(m=>m.MiCuenta) },
+  {
+    path: 'admin',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./admin/layout/admin-layout').then((m) => m.AdminLayout),
+    children: [
+      {
+        path: 'dashboard',
+        title: 'Toco Madera | Dashboard',
 
-  // ====================================================
-  // 6. RUTA DESCONOCIDA
-  // ====================================================
+        canActivate: [adminGuard],
 
+        loadComponent: () => import('./admin/dashboard/dashboard').then((m) => m.Dashboard),
+      },
+      {
+        path: 'productos',
+        title: 'Toco Madera | Productos',
+
+        // Solo usuarios con sesión ADMIN.
+        canActivate: [adminGuard],
+
+        loadComponent: () => import('./admin/productos/productos').then((m) => m.ProductosAdmin),
+      },
+      {
+        path: 'proveedores',
+
+        title: 'Toco Madera | Proveedores',
+
+        // Impedir el acceso sin una sesión ADMIN.
+        canActivate: [adminGuard],
+
+        // Carga diferida del componente.
+        loadComponent: () => import('./admin/proveedores/proveedores').then((m) => m.ProveedoresAdmin),
+      },
+      {
+        path: 'materiales',
+
+        title: 'Toco Madera | Materias primas',
+
+        canActivate: [adminGuard],
+
+        loadComponent: () => import('./admin/materiales/materiales').then((m) => m.MaterialesAdmin),
+      },
+      {
+        path: 'compras',
+
+        title: 'Toco Madera | Compras',
+
+        canActivate: [adminGuard],
+
+        loadComponent: () => import('./admin/compras/compras').then((m) => m.ComprasAdmin),
+      },
+      {
+        path: 'inventario',
+
+        title: 'Toco Madera | Inventario',
+
+        canActivate: [adminGuard],
+
+        loadComponent: () => import('./admin/inventario/inventario').then((m) => m.InventarioAdmin),
+      },
+      {
+        path: 'recetas',
+
+        title: 'Toco Madera | Recetas',
+
+        canActivate: [adminGuard],
+
+        loadComponent: () => import('./admin/recetas/recetas').then((m) => m.RecetasAdmin),
+      },
+      {
+        path: 'pedidos',
+        title: 'Toco Madera | Pedidos y autorizaciones',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./admin/pedidos/pedidos').then((m) => m.PedidosAdmin),
+      },
+      {
+        path: 'operaciones',
+        title: 'Toco Madera | Producción y entregas',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./admin/operaciones/operaciones').then((m) => m.OperacionesAdmin),
+      },
+      { path: 'clientes', title:'Toco Madera | Clientes', canActivate:[adminGuard],
+        loadComponent:()=>import('./admin/clientes/clientes').then(m=>m.ClientesAdmin) },
+    ],
+  },
   {
     path: '**',
     redirectTo: '',

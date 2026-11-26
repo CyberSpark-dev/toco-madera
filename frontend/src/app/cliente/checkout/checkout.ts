@@ -1,3 +1,8 @@
+import { etiquetaPedido } from '../../core/utils/etiquetas-pedido';
+import { IdentidadTocoMadera } from '../../core/ui/identidad-toco-madera';
+import { mensajeNotificable } from '../../core/services/notificaciones';
+import { mensajeError } from '../../core/utils/mensajes';
+import { formatearDinero } from '../../core/utils/dinero';
 /**
  * TOCO MADERA - ETAPA 3.18: CHECKOUT DE PAGO SIMULADO.
  * - El usuario CAPTURA un número de prueba como en un formulario real.
@@ -22,17 +27,18 @@ import {
 import { Auth } from '../../core/services/auth';
 import { IdMedioDemo, MetodosPagoDemoService } from '../../core/services/metodos-pago-demo';
 
-import { imagenProducto } from '../../core/utils/imagenes-productos';
+import { VistaGrabado } from '../grabado/vista-grabado';
 
 @Component({
   selector: 'app-checkout-cliente',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [IdentidadTocoMadera, FormsModule, RouterLink, VistaGrabado],
   templateUrl: './checkout.html',
   styleUrl: './checkout.css',
 })
 export class CheckoutCliente implements OnInit {
-  readonly imagenProducto = imagenProducto;
+  readonly etiquetaPedido = etiquetaPedido;
+
 
   readonly carrito = inject(CarritoService);
   readonly auth = inject(Auth);
@@ -41,11 +47,13 @@ export class CheckoutCliente implements OnInit {
   private readonly router = inject(Router);
 
   readonly procesando = signal(false);
-  readonly error = signal('');
+  readonly error = mensajeNotificable('error');
   readonly codigoError = signal<number | null>(null);
   readonly confirmado = signal<PedidoCliente | null>(null);
   readonly numeroCapturado = signal('');
   readonly avisoGuardado = signal('');
+  readonly campoError = signal<'numero' | 'acepta' | 'notas' | null>(null);
+  readonly notificarPedido = mensajeNotificable('exito');
 
   modalidad: ModalidadPago = 'ANTICIPO_50';
   metodo: MetodoPago = 'TRANSFERENCIA_SIMULADA';
@@ -61,9 +69,7 @@ export class CheckoutCliente implements OnInit {
     this.medios.cargar(this.auth.esCliente() ? (this.auth.usuario()?.id_usuario ?? null) : null);
   }
 
-  dinero(v: number | string): string {
-    return Number(v).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
-  }
+  readonly dinero = formatearDinero;
 
   montoInicialEstimado(): number {
     const total = this.carrito.subtotalEstimado();
@@ -72,6 +78,7 @@ export class CheckoutCliente implements OnInit {
 
   /** Actualiza únicamente memoria del componente: el valor no se persiste. */
   actualizarNumero(valor: string): void {
+    this.limpiarValidacion('numero');
     const maximo = this.metodo === 'TARJETA_SIMULADA' ? 16 : 18;
     this.numeroCapturado.set(
       String(valor ?? '')
@@ -80,6 +87,12 @@ export class CheckoutCliente implements OnInit {
     );
     this.error.set('');
     this.codigoError.set(null);
+  }
+
+  limpiarValidacion(campo: 'numero' | 'acepta' | 'notas'): void {
+    if (this.campoError() !== campo) return;
+    this.campoError.set(null);
+    this.error.set('');
   }
 
   cambiarMetodo(tipo: MetodoPago): void {
@@ -118,11 +131,13 @@ export class CheckoutCliente implements OnInit {
     const digitos = this.numeroCapturado();
     const longitud = this.metodo === 'TARJETA_SIMULADA' ? 16 : 18;
     if (!new RegExp(`^\\d{${longitud}}$`).test(digitos)) {
+      this.campoError.set('numero');
       this.error.set(`Ingresa ${longitud} dígitos para el método simulado seleccionado.`);
       return null;
     }
     const id = this.medios.identificar(digitos, this.metodo);
     if (!id) {
+      this.campoError.set('numero');
       this.error.set(
         'Este simulador solo acepta los números ficticios de prueba indicados. No introduzcas datos bancarios reales.',
       );
@@ -134,6 +149,7 @@ export class CheckoutCliente implements OnInit {
   confirmar(): void {
     if (this.procesando() || this.confirmado()) return;
     this.error.set('');
+    this.campoError.set(null);
     this.codigoError.set(null);
     if (this.carrito.vacio()) {
       this.error.set('El carrito está vacío.');
@@ -156,10 +172,12 @@ export class CheckoutCliente implements OnInit {
     const idDemo = this.validarInstrumento();
     if (!idDemo) return;
     if (!this.aceptaSimulacion) {
+      this.campoError.set('acepta');
       this.error.set('Debes aceptar que se trata de una simulación académica.');
       return;
     }
     if (this.notas.length > 500) {
+      this.campoError.set('notas');
       this.error.set('Las observaciones admiten máximo 500 caracteres.');
       return;
     }
@@ -189,6 +207,7 @@ export class CheckoutCliente implements OnInit {
           }
           this.numeroCapturado.set('');
           this.confirmado.set(respuesta.pedido);
+          this.notificarPedido.set('Pedido realizado con éxito.');
           this.carrito.vaciarDeUsuario(idClienteCheckout);
           this.procesando.set(false);
         },
@@ -199,24 +218,22 @@ export class CheckoutCliente implements OnInit {
           if (e.status === 401) {
             this.error.set('La sesión no está disponible. Inicia sesión nuevamente.');
           } else if (e.status === 403) {
-            this.error.set('Flask rechazó el rol: usa una cuenta CLIENTE.');
+            this.error.set('Inicia sesión con una cuenta de cliente para realizar el pedido.');
           } else if (e.status === 409) {
             this.error.set(
               'El pedido podría estar registrado. Comprueba Mis pedidos antes de reintentar.',
             );
           } else if (e.status >= 500) {
             this.error.set(
-              'Error de Flask/MySQL. Revisa Mis pedidos y el registro del servidor antes de reintentar.',
+              'No pudimos confirmar el resultado. Revisa Mis pedidos antes de volver a intentarlo.',
             );
           } else if (e.status === 0) {
             this.error.set(
-              'No fue posible conectar con Flask. Comprueba Mis pedidos antes de reintentar.',
+              'Se interrumpió la conexión. Revisa Mis pedidos antes de volver a intentarlo.',
             );
           } else {
             this.error.set(
-              typeof e.error?.message === 'string'
-                ? e.error.message
-                : 'No fue posible confirmar el pedido.',
+              mensajeError(e, 'No fue posible confirmar el pedido.'),
             );
           }
         },

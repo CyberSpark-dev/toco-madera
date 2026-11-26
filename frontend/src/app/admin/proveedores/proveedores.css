@@ -1,16 +1,53 @@
-/* ==================================================
-   TOCO MADERA - ADMINISTRACIÓN DE PROVEEDORES
-   Archivo: admin/proveedores/proveedores.css
-   ETAPA 3.16
-================================================== */
+.gestion-modulo :is(button, input, select, textarea):focus-visible {
+  outline: 2px solid #4b2e1f;
+  outline-offset: 2px;
+}
 
-/*
- * La interfaz usa Tailwind CSS 4 y el estilo
- * visual de los formularios Flowbite.
- *
- * Los colores de la marca están configurados
- * en frontend/src/styles.css.
- *
- * No es necesario agregar estilos adicionales
- * para esta primera implementación.
- */
+.lista-scroll {
+  max-block-size: min(62vh, 34rem);
+  max-block-size: min(62dvh, 34rem);
+  scroll-padding-block-start: 3rem;
+}
+
+.lista-tabla {
+  min-inline-size: 43rem;
+}
+
+.lista-tabla thead th {
+  z-index: 20;
+  background: #f9e9d5;
+  box-shadow: inset 0 -1px #e8d6bf;
+  white-space: nowrap;
+}
+
+.lista-tabla tbody :is(th, td) {
+  border-block-end: 1px solid #f2e8dc;
+  overflow-wrap: anywhere;
+}
+
+.identificador {
+  inline-size: 12rem;
+  max-inline-size: 12rem;
+}
+
+.contexto-edicion {
+  top: env(safe-area-inset-top, 0px);
+}
+
+form :is(input, select, textarea, button) {
+  scroll-margin-block-start: calc(4rem + env(safe-area-inset-top, 0px));
+}
+
+@media (min-width: 48rem) {
+  .lista-scroll { scroll-padding-inline-start: 12rem; }
+
+  .identificador {
+    position: sticky;
+    inset-inline-start: 0;
+    border-inline-end: 1px solid #e8d6bf;
+  }
+
+  .lista-tabla tbody .identificador { z-index: 10; background: white; }
+  .lista-tabla tbody tr:is(:hover, :focus-within) .identificador { background: #fff9f2; }
+  .lista-tabla thead .identificador { z-index: 25; }
+}

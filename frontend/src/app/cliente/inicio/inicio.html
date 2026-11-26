@@ -27,14 +27,11 @@
        1. ENCABEZADO Y NAVEGACIÓN
   ================================================ -->
 
-  <header class="bg-white shadow-sm">
-    <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 p-5">
+  <a href="#contenido-tienda" class="salto-tienda">Saltar al contenido</a>
+  <header class="cabecera-tienda border-b border-[#e2d0bb] bg-[#fffaf3]">
+    <nav aria-label="Navegación principal de la tienda" class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
       <!-- NOMBRE COMERCIAL -->
-      <a routerLink="/" class="inline-flex items-center gap-3 font-brand text-2xl font-bold text-nogal">
-        <img src="/logo-icono.png" alt="" width="48" height="48"
-          class="h-12 w-12 shrink-0 object-contain" />
-        <span>Toco Madera</span>
-      </a>
+      <app-identidad-toco-madera class="text-nogal" />
 
       <!-- ============================================
            MENÚ DINÁMICO
@@ -171,64 +168,70 @@
        2. CONTENIDO PRINCIPAL
   ================================================ -->
 
-  <main class="mx-auto max-w-7xl px-6 py-16">
-    <!-- ============================================
-         PRESENTACIÓN DE LA EMPRESA
-    ============================================ -->
-
-    <section class="mb-16 text-center">
-      <!-- Identidad visual principal: logo a la izquierda, nombre a la derecha -->
-      <div class="mb-5 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-5">
-        <img src="/logo-icono.png" alt="" width="112" height="112"
-          class="h-24 w-24 shrink-0 object-contain sm:h-28 sm:w-28" />
-        <h1 class="font-brand text-4xl font-bold text-nogal md:text-5xl">
-          {{ nombreEmpresa }}
-        </h1>
+  <main id="contenido-tienda" tabindex="-1" class="contenido-tienda">
+    <section class="portada" aria-labelledby="titulo-tienda">
+      <div class="portada-texto text-center">
+        <p class="rotulo">Taller artesanal en León</p>
+        <h1 id="titulo-tienda" class="font-brand">{{ nombreEmpresa }}</h1>
+        <p class="portada-subtitulo font-brand">{{ eslogan }}</p>
+        <p class="portada-descripcion">Fabricamos artículos de madera y personalizamos con grabado las piezas del catálogo que lo permiten.</p>
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <button type="button" (click)="irAlCatalogo()" class="accion accion-principal">Explorar catálogo</button>
+          <a routerLink="/cliente/carrito" class="accion accion-secundaria">Ir a comprar</a>
+        </div>
+        <app-instalacion-pwa />
       </div>
 
-      <p class="mb-6 text-2xl text-terracota">
-        {{ eslogan }}
-      </p>
-
-      <p class="mx-auto max-w-2xl text-lg text-gray-700">
-        Fabricamos artículos de madera personalizados mediante grabado artesanal.
-      </p>
-
-      <!-- ======================================
-           BOTONES DE PRESENTACIÓN
-      ====================================== -->
-
-      <div class="mt-8 flex flex-wrap justify-center gap-4">
-        <!-- Desplazar directamente al catálogo -->
-        <button
-          type="button"
-          (click)="irAlCatalogo()"
-          class="rounded-lg bg-nogal px-6 py-3 font-semibold text-white transition-colors hover:bg-terracota"
-        >
-          Explorar productos
-        </button>
-
-        <!-- Acceso al carrito -->
-        <a
-          routerLink="/cliente/carrito"
-          class="rounded-lg border-2 border-terracota px-6 py-3 font-semibold text-terracota transition-colors hover:bg-white"
-        >
-          Ir a comprar
-        </a>
+      @let actual = escena();
+      <div class="muestra" aria-label="Historias de Toco Madera" aria-roledescription="carrusel" role="group"
+        (mouseenter)="cursorCarrusel(true)" (mouseleave)="cursorCarrusel(false)"
+        (focusin)="focoCarrusel(true, $event)" (focusout)="focoCarrusel(false, $event)"
+        (keydown)="focoCarrusel(true)">
+        <img class="muestra-foto" [src]="actual.foto" [alt]="actual.alt"
+          [style.object-position]="actual.posicion"
+          width="640" height="520" />
+          <div class="muestra-pie">
+            <div [attr.aria-live]="rotando() ? 'off' : 'polite'" aria-atomic="true" class="min-w-0">
+              <span class="sr-only">Escena {{ indiceDestacado() + 1 }} de {{ escenas.length }}.</span>
+              <p class="break-words font-brand text-lg font-bold sm:text-2xl">{{ actual.titulo }}</p>
+              <button type="button" class="py-1 text-sm underline underline-offset-4" (click)="irAEscena()">
+                {{ actual.destino === 'nosotros' ? 'Conocer el taller' : 'Ver en catálogo' }}
+              </button>
+            </div>
+              <div class="muestra-controles flex items-center gap-1.5 text-xs">
+                <button type="button" (click)="desplazarDestacado(-1)" aria-label="Escena anterior">
+                  <span aria-hidden="true">←</span>
+                </button>
+                <span class="w-8 text-center tabular-nums" aria-hidden="true">{{ indiceDestacado() + 1 }}/{{ escenas.length }}</span>
+                <button type="button" (click)="desplazarDestacado(1)" aria-label="Escena siguiente">
+                  <span aria-hidden="true">→</span>
+                </button>
+              </div>
+          </div>
       </div>
     </section>
 
-    <!-- ================================================
-         3. CATÁLOGO DE PRODUCTOS
-    ================================================ -->
+    <section class="beneficios" aria-labelledby="titulo-beneficios">
+      <div>
+        <p class="rotulo">Nuestro taller</p>
+        <h2 id="titulo-beneficios" class="font-brand">El valor de hacer las cosas a mano</h2>
+      </div>
+      <ul class="beneficios-lista">
+        <li><h3>Fabricación propia</h3><p>Piezas trabajadas en nuestro taller en León.</p></li>
+        <li><h3>Grabado a tu gusto</h3><p>Personaliza los productos que admiten grabado.</p></li>
+        <li><h3>Acabado artesanal</h3><p>Cuidamos el lijado y los detalles de cada pieza.</p></li>
+        <li><h3>Entrega en León</h3><p>Consulta las opciones de entrega al hacer tu pedido.</p></li>
+      </ul>
+    </section>
 
-    <section id="catalogo" class="scroll-mt-8">
+
+    <section id="catalogo" class="catalogo-tienda" aria-labelledby="titulo-catalogo">
       <!-- ======================================
            ENCABEZADO DEL CATÁLOGO
       ====================================== -->
 
       <div class="mb-8">
-        <h2 class="text-3xl font-bold text-nogal">Nuestros productos</h2>
+        <p class="rotulo">Hecho en nuestro taller</p><h2 id="titulo-catalogo" tabindex="-1" class="font-brand text-3xl font-bold text-nogal sm:text-4xl">Nuestros productos</h2>
 
         <p class="mt-2 text-gray-600">
           Conoce nuestros artículos artesanales y personalízalos a tu estilo.
@@ -252,7 +255,7 @@
       ====================================== -->
 
       @else if (errorProductos()) {
-        <div role="alert" class="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
+        <div class="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
           <h3 class="text-xl font-semibold text-red-700">No pudimos cargar el catálogo</h3>
 
           <p class="mt-3 text-sm text-red-600">
@@ -293,7 +296,7 @@
           <!-- Recorrer productos registrados -->
           @for (producto of productos(); track producto.id_producto) {
             <article
-              class="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-shadow duration-200 hover:shadow-lg"
+              [id]="'producto-' + producto.id_producto" class="tarjeta-producto flex flex-col overflow-hidden bg-white"
             >
               <!-- Fotografía ambientada del producto, alojada en frontend/public/productos -->
               @if (imagenProducto(producto.nombre, 'ambiente'); as foto) {
@@ -325,7 +328,7 @@
                 </p>
 
                 <!-- Nombre -->
-                <h3 class="mb-3 text-xl font-semibold text-nogal">
+                <h3 tabindex="-1" class="mb-3 font-brand text-xl font-semibold text-nogal">
                   {{ producto.nombre }}
                 </h3>
 
@@ -336,7 +339,7 @@
 
                 <!-- Precio de catálogo -->
                 <p class="mb-4 text-2xl font-bold text-terracota">
-                  {{ producto.precio_lista | currency: 'MXN' : 'symbol' : '1.2-2' }}
+                  {{ formatearPrecio(producto.precio_lista) }}
                 </p>
 
                 <!-- ==================================
@@ -386,5 +389,45 @@
         </div>
       }
     </section>
+    <section id="nosotros" class="nosotros" aria-labelledby="titulo-nosotros">
+      <div class="overflow-hidden">
+        <img src="/productos/portallaves.png" alt="Detalle de un portallaves de madera" width="540" height="380" loading="lazy" class="h-full max-h-[28rem] w-full object-cover" />
+      </div>
+      <div class="nosotros-texto">
+        <p class="rotulo">Sobre nosotros</p>
+        <h2 id="titulo-nosotros" tabindex="-1" class="font-brand">Del taller a tu casa</h2>
+        <p>En Toco Madera trabajamos piezas de madera para el uso diario y para regalar. Preparamos la madera, damos forma a cada artículo y lijamos la superficie antes de aplicar el acabado.</p>
+        <p>Cuando la pieza admite grabado, incorporamos tu texto durante la fabricación. Cada veta y acabado forma parte del carácter artesanal del producto.</p>
+        <button type="button" class="accion accion-secundaria" (click)="irAlCatalogo()">Volver al catálogo</button>
+      </div>
+    </section>
   </main>
+
+  <footer class="pie-tienda border-t-4 border-[#83916d] bg-[#38251c] text-[#f8eee0]" [class.pie-con-aviso]="notificaciones.mensajes().length > 0">
+    <div class="mx-auto grid max-w-7xl gap-7 px-4 py-6 sm:px-6 sm:py-10 md:grid-cols-[1.3fr_1fr_1fr] md:py-14">
+      <div>
+        <app-identidad-toco-madera />
+        <p class="mt-2 text-sm text-[#c9d3b5]">{{ eslogan }}</p>
+        <p class="mt-2 max-w-[35ch] text-sm">Artículos de madera y grabados personalizados elaborados en nuestro taller.</p>
+      </div>
+      <nav aria-label="Navegación al pie de la tienda">
+        <h2 class="mb-2 font-bold text-[#c9d3b5]">Explora la tienda</h2>
+        <ul>
+          <li><button type="button" (click)="irAlCatalogo()">Catálogo</button></li>
+          <li><a href="#nosotros">Sobre nosotros</a></li>
+          <li><a routerLink="/cliente/carrito">Mi carrito</a></li>
+          <li><a href="#instalacion-toco-madera">Instalar Toco Madera</a></li>
+          @if (auth.esCliente()) {
+            <li><a routerLink="/cliente/mi-cuenta">Mi cuenta</a></li>
+            <li><a routerLink="/cliente/mis-pedidos">Mis pedidos</a></li>
+          }
+        </ul>
+      </nav>
+      <div>
+        <h2 class="mb-2 font-bold text-[#c9d3b5]">Taller y entrega</h2>
+        <p>León, Guanajuato, México.</p>
+      </div>
+    </div>
+    <div class="border-t border-white/20 p-4 text-center text-xs">© {{ nombreEmpresa }} · Taller de grabado artesanal</div>
+  </footer>
 </div>

@@ -141,7 +141,7 @@ def decidir(id_pedido):
             return jsonify(success=False,message='Pedido no encontrado.'),404
         if p['estado']!='CONFIRMADO':
             db.session.rollback()
-            return jsonify(success=False,message='Solo se revisan pedidos CONFIRMADO que no han avanzado en producción o entrega.'),409
+            return jsonify(success=False,message='Solo puedes revisar pedidos confirmados que aún no tienen producción o entrega.'),409
         previo=db.session.execute(text('''SELECT estado FROM autorizaciones_pedido
                                          WHERE id_pedido=:id FOR UPDATE'''),{'id':id_pedido}).scalar_one_or_none()
         if previo:
@@ -164,7 +164,7 @@ def decidir(id_pedido):
         db.session.commit()
         return jsonify(success=True,id_pedido=id_pedido,autorizacion=decision,
                        message=('Pedido autorizado para gestión administrativa.' if decision=='APROBADO'
-                                else 'Pedido rechazado para fabricación. Revisar gestión manual del pago SIMULADO.')),200
+                                else 'Pedido rechazado para fabricación. Los pagos simulados permanecen en el historial.')),200
     except PermissionError as exc:
         db.session.rollback()
         return jsonify(success=False,message=str(exc)),403

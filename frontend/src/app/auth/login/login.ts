@@ -1,3 +1,5 @@
+import { IdentidadTocoMadera } from '../../core/ui/identidad-toco-madera';
+import { mensajeNotificable } from '../../core/services/notificaciones';
 /** TOCO MADERA - Login con retorno seguro al checkout. */
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -7,7 +9,7 @@ import { Auth } from '../../core/services/auth';
 
 @Component({
   selector: 'app-login', standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [IdentidadTocoMadera, FormsModule, RouterLink],
   templateUrl: './login.html', styleUrl: './login.css'
 })
 export class Login {
@@ -17,7 +19,7 @@ export class Login {
   correo = '';
   password = '';
   readonly cargando = signal(false);
-  readonly error = signal('');
+  readonly error = mensajeNotificable('error');
   readonly mostrarPassword = signal(false);
   registroExitoso = this.route.snapshot.queryParamMap.get('registrado') === '1';
 
@@ -45,7 +47,7 @@ export class Login {
       },
       error: (e: HttpErrorResponse) => {
         this.cargando.set(false);
-        if (e.status === 0) this.error.set('No se pudo conectar con Flask.');
+        if (e.status === 0) this.error.set('En este momento no hay conexión. Inténtalo nuevamente.');
         else if (e.status === 401) this.error.set('Correo o contraseña incorrectos.');
         else if (e.status === 403) this.error.set('Esta cuenta está desactivada.');
         else this.error.set('No fue posible iniciar sesión. Intenta nuevamente.');

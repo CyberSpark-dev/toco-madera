@@ -1,3 +1,4 @@
+import { mensajeError } from '../../core/utils/mensajes';
 /**
  * ======================================================
  * TOCO MADERA - ADMINISTRACIÓN DE INVENTARIO
@@ -18,7 +19,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 
 import {
@@ -29,11 +30,12 @@ import {
 
 import { AdminMateriales, UnidadMedida } from '../../core/services/admin-materiales';
 import { Auth } from '../../core/services/auth';
+import { formatearCantidad } from '../../core/utils/cantidades';
 
 @Component({
   selector: 'app-inventario-admin',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule],
   templateUrl: './inventario.html',
   styleUrl: './inventario.css',
 })
@@ -54,6 +56,9 @@ export class InventarioAdmin implements OnInit {
   readonly inventario = signal<ExistenciaMaterial[]>([]);
   readonly movimientos = signal<MovimientoMaterial[]>([]);
   readonly unidades = signal<UnidadMedida[]>([]);
+  readonly unidadesPorMaterial = computed(
+    () => new Map(this.inventario().map((material) => [material.id_material, material.id_unidad])),
+  );
 
   // ====================================================
   // 3. ESTADO DE CARGA Y ERRORES
@@ -230,9 +235,20 @@ export class InventarioAdmin implements OnInit {
   // 14. FORMATEO DE CANTIDADES
   // ====================================================
 
-  cantidadTexto(valor: string): string {
-    // Conservamos la cadena DECIMAL recibida de MySQL.
-    return valor;
+  cantidadTexto(valor: string, idUnidad?: number, mostrarSignoPositivo = false) {
+    const negativo = valor.startsWith('-');
+    const magnitud = negativo ? valor.slice(1) : valor;
+    const unidad = idUnidad === undefined ? '' : this.nombreUnidad(idUnidad);
+    const cantidad = formatearCantidad(magnitud, unidad);
+    const signo = negativo ? '-' : mostrarSignoPositivo && Number(valor) > 0 ? '+' : '';
+    const aviso = cantidad.aviso?.replace(`Valor registrado: ${magnitud}.`, `Valor registrado: ${valor}.`);
+
+    if (cantidad.texto === '< 0.01') {
+      return { texto: negativo ? '> -0.01' : cantidad.texto, aviso };
+    }
+
+    const texto = cantidad.texto.replace(/^(≈ )?/, (_, aproximacion = '') => aproximacion + signo);
+    return { texto, aviso };
   }
 
   // ====================================================
@@ -240,7 +256,7 @@ export class InventarioAdmin implements OnInit {
   // ====================================================
 
   private obtenerMensaje(error: HttpErrorResponse, predeterminado: string): string {
-    return typeof error.error?.message === 'string' ? error.error.message : predeterminado;
+    return mensajeError(error, predeterminado);
   }
 
   private manejarAutenticacion(error: HttpErrorResponse): boolean {

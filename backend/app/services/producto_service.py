@@ -40,11 +40,16 @@ class ProductoService:
         resultado = []
 
         for producto in productos:
+            descripcion = producto.descripcion
+            # Compatibilidad con el catálogo inicial. Las descripciones editadas se respetan.
+            if (producto.sku == "TM-RC-01"
+                    and descripcion == "Grabado solo en asas; acabado apto para alimentos"):
+                descripcion = "Grabado personalizable en el cuerpo del rodillo; acabado apto para alimentos"
             resultado.append({
                 "id_producto": producto.id_producto,
                 "sku": producto.sku,
                 "nombre": producto.nombre,
-                "descripcion": producto.descripcion,
+                "descripcion": descripcion,
 
                 # Enviar el precio como texto decimal
                 # para conservar la precisión.

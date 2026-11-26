@@ -6,7 +6,7 @@
   <!-- ENCABEZADO -->
   <header class="bg-white shadow-sm">
     <nav class="mx-auto flex max-w-7xl items-center justify-between p-5">
-      <a routerLink="/" class="font-brand text-2xl font-bold text-nogal">Toco Madera</a>
+      <app-identidad-toco-madera class="text-nogal" />
       <a routerLink="/" class="text-sm font-medium text-terracota hover:underline">Volver al inicio</a>
     </nav>
   </header>
@@ -22,7 +22,7 @@
       </div>
 
       <!-- MENSAJE GENERAL DE ERROR -->
-      @if (error()) {
+      @if (error() && !(error() === 'Este correo ya está registrado.')) {
         <div role="alert" class="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {{ error() }}
         </div>
@@ -62,10 +62,13 @@
             #correoControl="ngModel"
             required email maxlength="190" autocomplete="email"
             placeholder="correo@ejemplo.com"
-            [attr.aria-invalid]="correoControl.invalid && correoControl.touched ? 'true' : null"
+            [attr.aria-invalid]="(correoControl.invalid && correoControl.touched) || error() === 'Este correo ya está registrado.' ? 'true' : null"
+            [attr.aria-describedby]="error() === 'Este correo ya está registrado.' ? 'correo-registrado' : null"
             class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm text-gray-900 focus:border-terracota focus:ring-terracota"
           />
-          @if (correoControl.invalid && (correoControl.touched || correoControl.dirty)) {
+          @if (error() === 'Este correo ya está registrado.') {
+            <p id="correo-registrado" role="alert" class="mt-2 text-sm text-red-700">{{ error() }}</p>
+          } @else if (correoControl.invalid && (correoControl.touched || correoControl.dirty)) {
             <p role="alert" class="mt-2 text-sm font-medium text-red-700">
               @if (correoControl.errors?.['required']) {
                 El correo electrónico es obligatorio.

@@ -14,6 +14,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 from app.extensions import db
+from app.services.faltantes_produccion import verificar_orden
 
 admin_produccion_bp = Blueprint(
     'admin_produccion', __name__, url_prefix='/api/v1/admin/produccion'
@@ -210,7 +211,7 @@ def planificar_orden():
         '''), {'id': fila['id_pedido']}).scalar_one_or_none()
         if aprobacion != 'APROBADO':
             db.session.rollback()
-            return jsonify(success=False, message='El pedido requiere autorizacion ADMIN antes de fabricar.'), 409
+            return jsonify(success=False, message='Autoriza el pedido antes de fabricar.'), 409
         receta = db.session.execute(text('''
             SELECT id_receta, version FROM recetas
             WHERE id_producto = :producto AND vigente = 1
@@ -269,7 +270,7 @@ def iniciar_orden(id_orden):
             return jsonify(success=False, message='Orden no encontrada.'), 404
         if orden['estado'] != 'PLANIFICADA':
             db.session.rollback()
-            return jsonify(success=False, message='Solo puede iniciarse una orden PLANIFICADA.'), 409
+            return jsonify(success=False, message='Solo puedes iniciar una orden planificada.'), 409
         if orden['id_detalle_pedido'] is not None and orden['estado_pedido'] not in ('CONFIRMADO', 'EN_PRODUCCION'):
             db.session.rollback()
             return jsonify(success=False, message='El pedido ya no admite producción.'), 409
@@ -279,7 +280,7 @@ def iniciar_orden(id_orden):
             '''), {'id': orden['id_pedido']}).scalar_one_or_none()
             if aprobacion != 'APROBADO':
                 db.session.rollback()
-                return jsonify(success=False, message='El pedido requiere autorizacion ADMIN antes de iniciar produccion.'), 409
+                return jsonify(success=False, message='Autoriza el pedido antes de iniciar la producción.'), 409
         db.session.execute(text('''
             UPDATE ordenes_produccion
             SET estado='EN_PROCESO', fecha_inicio=COALESCE(fecha_inicio, NOW())
@@ -313,74 +314,18 @@ def _cantidad_decimal(valor):
     return Decimal(str(valor)).quantize(_ESCALA, rounding=ROUND_HALF_UP)
 
 
-def _preparar_materiales_orden(id_orden):
-    """Construye requerimientos y saldos; se invoca dentro de transacción."""
-    rows = db.session.execute(text('''
-        SELECT rm.id_material, m.sku, m.nombre,
-               rm.cantidad AS cantidad_por_unidad,
-               m.stock_minimo, m.activo,
-               COALESCE(SUM(mm.cantidad_firmada), 0) AS disponible
-        FROM ordenes_produccion op
-        INNER JOIN receta_materiales rm ON rm.id_receta = op.id_receta
-        INNER JOIN materiales m ON m.id_material = rm.id_material
-        LEFT JOIN movimientos_material mm ON mm.id_material = m.id_material
-        WHERE op.id_orden = :orden
-        GROUP BY rm.id_material, m.sku, m.nombre,
-                 rm.cantidad, m.stock_minimo, m.activo
-        ORDER BY rm.id_material
-    '''), {'orden': id_orden}).mappings().all()
-    return rows
-
-
 @admin_produccion_bp.get('/<int:id_orden>/verificar-materiales')
 @jwt_required()
 def verificar_materiales_orden(id_orden):
     """Vista previa de consumo sin descontar ni escribir en la BD."""
     try:
         _validar_admin()
-        orden = db.session.execute(text('''
-            SELECT id_orden, estado, cantidad FROM ordenes_produccion
-            WHERE id_orden = :id
-        '''), {'id': id_orden}).mappings().first()
-        if not orden:
-            db.session.rollback()
+        verificacion = verificar_orden(db.session, id_orden)
+        if verificacion is None:
             return jsonify(success=False, message='Orden no encontrada.'), 404
-        rows = _preparar_materiales_orden(id_orden)
-        ya_consumida = bool(db.session.execute(text('''
-            SELECT EXISTS(SELECT 1 FROM consumos_produccion WHERE id_orden = :id)
-                OR EXISTS(SELECT 1 FROM movimientos_material
-                          WHERE id_orden_produccion = :id AND tipo = 'CONSUMO')
-        '''), {'id': id_orden}).scalar_one())
-        materiales = []
-        for fila in rows:
-            requerido = _cantidad_decimal(
-                _cantidad_decimal(fila['cantidad_por_unidad']) * int(orden['cantidad'])
-            )
-            disponible = _cantidad_decimal(fila['disponible'])
-            materiales.append({
-                'id_material': int(fila['id_material']),
-                'sku': fila['sku'],
-                'nombre': fila['nombre'],
-                'cantidad_por_unidad': str(_cantidad_decimal(fila['cantidad_por_unidad'])),
-                'cantidad_requerida': str(requerido),
-                'stock_disponible': str(disponible),
-                'stock_despues': str(disponible - requerido),
-                'stock_minimo': str(_cantidad_decimal(fila['stock_minimo'])),
-                'activo': bool(fila['activo']),
-                'suficiente': bool(fila['activo']) and requerido > 0 and disponible >= requerido,
-            })
-        disponible_para_consumir = (
-            orden['estado'] == 'EN_PROCESO'
-            and not ya_consumida and bool(materiales)
-            and all(x['suficiente'] for x in materiales)
-        )
         return jsonify(
-            success=True, id_orden=id_orden,
-            estado=orden['estado'], ya_consumida=ya_consumida,
-            puede_consumir=disponible_para_consumir,
-            materiales=materiales,
-            # Lectura orientativa: las existencias podrían cambiar antes de confirmar.
-            advertencia='La disponibilidad se valida nuevamente dentro de la transacción al consumir.'
+            success=True, **verificacion,
+            advertencia='La disponibilidad se comprueba nuevamente antes de registrar el consumo.'
         ), 200
     except PermissionError as exc:
         db.session.rollback()
@@ -422,7 +367,7 @@ def consumir_materiales_orden(id_orden):
         if orden['estado'] != 'EN_PROCESO':
             db.session.rollback()
             return jsonify(success=False,
-                           message='Solo se pueden consumir materiales de órdenes EN_PROCESO.'), 409
+                           message='Solo puedes registrar el consumo de materiales en órdenes en proceso.'), 409
         if orden['id_detalle_pedido'] is not None and orden['estado_pedido'] not in ('CONFIRMADO', 'EN_PRODUCCION'):
             db.session.rollback()
             return jsonify(success=False, message='El pedido ya no admite producción.'), 409

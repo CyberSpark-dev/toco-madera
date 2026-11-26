@@ -9,55 +9,14 @@
        1. ENCABEZADO
   ================================================ -->
 
-  <header class="bg-nogal px-6 py-5 text-white">
-    <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
-      <div>
-        <h1 class="font-brand text-xl font-bold">Toco Madera | Administración</h1>
-
-        <p class="mt-1 text-sm text-[#F9E9D5]">Compras y recepción de materias primas</p>
-      </div>
-
-      <div class="flex flex-wrap gap-3">
-        <a
-          routerLink="/admin/dashboard"
-          class="rounded-lg border border-white/40 px-4 py-2 text-sm font-semibold hover:bg-white/10"
-        >
-          Dashboard
-        </a>
-
-        <a
-          routerLink="/admin/materiales"
-          class="rounded-lg border border-white/40 px-4 py-2 text-sm font-semibold hover:bg-white/10"
-        >
-          Materiales
-        </a>
-
-        <a
-          routerLink="/admin/proveedores"
-          class="rounded-lg border border-white/40 px-4 py-2 text-sm font-semibold hover:bg-white/10"
-        >
-          Proveedores
-        </a>
-
-        <button
-          type="button"
-          (click)="cerrarSesion()"
-          class="rounded-lg bg-terracota px-4 py-2 text-sm font-semibold hover:bg-[#8C4825]"
-        >
-          Cerrar sesión
-        </button>
-      </div>
-    </nav>
-  </header>
-
   <!-- ================================================
        2. CONTENIDO
   ================================================ -->
 
-  <main class="mx-auto max-w-7xl px-6 py-10">
-    <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+  <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#E8D6BF] bg-[#FFF9F2] p-4 shadow-sm sm:p-6">
       <div>
-        <h2 class="font-brand text-3xl font-bold text-nogal">Gestión de compras</h2>
+        <h2 class="font-brand text-2xl font-bold text-nogal sm:text-3xl">Compras</h2>
 
         <p class="mt-2 text-gray-600">
           Registra compras a proveedores y confirma la recepción de materias primas.
@@ -93,6 +52,74 @@
       </div>
     }
 
+    @if (ordenRecibida(); as orden) {
+      <a class="mb-5 inline-block rounded-lg border border-nogal px-4 py-2 font-semibold text-nogal focus-visible:ring-2"
+        [routerLink]="['/admin/operaciones']" [queryParams]="{orden: orden}">
+        Volver a Producción y entregas
+      </a>
+    }
+
+    @if (ordenConsulta(); as orden) {
+      <section aria-labelledby="titulo-preparacion" class="mb-6 rounded-2xl border border-[#E8D6BF] bg-[#FFF9F2] p-4 sm:p-6">
+        <h2 id="titulo-preparacion" class="text-xl font-bold text-nogal">Compra asistida · Orden #{{ orden }}</h2>
+        @if (folioOrigen()) { <p class="text-sm text-gray-700">Pedido {{ folioOrigen() }}</p> }
+        @if (ordenRecibida() !== orden) {
+          <a class="inline-block py-2 font-semibold text-nogal underline" [routerLink]="['/admin/operaciones']"
+            [queryParams]="{orden: orden}">Volver a Producción y entregas</a>
+        }
+        @if (preparando()) { <p role="status">Comprobando faltantes y borradores…</p> }
+        @if (errorPreparacion()) {
+          <p role="alert" class="text-red-800">{{ errorPreparacion() }}</p>
+          <button type="button" class="rounded-lg border border-nogal px-3 py-2" [disabled]="preparando()"
+            (click)="cargarPreparacion(orden, ordenFormulario() === orden ? formulario.id_proveedor : 0, !mostrarFormulario())">Reintentar consulta</button>
+        } @else if (preparacion(); as datos) {
+          @if (datos.borradores.length) {
+            <h3 class="mt-3 font-semibold text-nogal">Borradores vinculados</h3>
+            <ul class="my-2 flex flex-wrap gap-2">
+              @for (compra of datos.borradores; track compra.id_compra) {
+                <li><button type="button" class="rounded-lg border border-nogal px-3 py-2 text-nogal"
+                  [disabled]="guardando() || abriendoBorrador()" (click)="abrirBorrador(compra.id_compra)">
+                  Abrir borrador #{{ compra.id_compra }}
+                </button></li>
+              }
+            </ul>
+          }
+          @if (datos.materiales.length) {
+            <p class="my-2 text-sm text-gray-700">La cobertura de borradores no se suma a las existencias. Las cantidades sugeridas muestran lo que aún queda por cubrir.</p>
+            <ul class="grid gap-3 lg:grid-cols-2">
+              @for (material of datos.materiales; track material.id_material) {
+                <li class="min-w-0 rounded-xl border border-[#E8D6BF] bg-white p-3">
+                  <h3 class="break-words font-semibold text-nogal">{{ material.nombre }} · {{ material.unidad }}</h3>
+                  <dl class="mt-2 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+                    @for (dato of [
+                      {etiqueta: 'Requerido', valor: material.cantidad_requerida},
+                      {etiqueta: 'Disponible', valor: material.stock_disponible},
+                      {etiqueta: 'Faltante', valor: material.cantidad_faltante},
+                      {etiqueta: 'Cobertura', valor: material.cobertura_borradores},
+                      {etiqueta: 'Sugerido', valor: material.cantidad_sugerida}
+                    ]; track dato.etiqueta) {
+                      @let cantidad = cantidadTexto(dato.valor, material.unidad);
+                      <div><dt class="text-gray-600">{{ dato.etiqueta }}</dt>
+                        <dd class="font-semibold">{{ cantidad.texto }}
+                          @if (cantidad.aviso) { <span class="block text-xs font-normal text-amber-800">{{ cantidad.aviso }}</span> }
+                        </dd>
+                      </div>
+                    }
+                  </dl>
+                </li>
+              }
+            </ul>
+            @if (haySugerencias() && !mostrarFormulario()) {
+              <button type="button" class="mt-3 rounded-lg bg-nogal px-4 py-2 font-semibold text-white"
+                [disabled]="preparando() || abriendoBorrador()" (click)="abrirCompraAsistida()">Preparar cantidades sugeridas</button>
+            }
+          } @else if (!preparando()) {
+            <p class="mt-2 text-sm text-gray-700">{{ motivoPreparacion(datos.motivo_bloqueo) }}</p>
+          }
+        }
+      </section>
+    }
+
     @if (errorCatalogos()) {
       <div role="alert" class="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
         <p class="text-sm text-amber-900">
@@ -113,7 +140,7 @@
          4. FILTROS
     ================================================ -->
 
-    <section class="mb-6 rounded-xl bg-white p-5 shadow-sm">
+    <section class="mb-6 rounded-2xl border border-[#E8D6BF] bg-white p-4 shadow-sm sm:p-5">
       <div class="grid gap-4 md:grid-cols-3">
         <div class="md:col-span-2">
           <label for="buscarCompra" class="mb-2 block font-medium text-nogal">
@@ -152,9 +179,9 @@
          5. LISTADO DE COMPRAS
     ================================================ -->
 
-    <section class="rounded-xl bg-white shadow-sm">
-      <div class="flex flex-wrap justify-between gap-3 border-b border-gray-200 p-5">
-        <h3 class="text-lg font-bold text-nogal">Compras registradas</h3>
+    <section class="min-w-0 rounded-2xl border border-[#E8D6BF] bg-white shadow-sm">
+      <div class="flex flex-wrap justify-between gap-3 rounded-t-2xl border-b border-[#E8D6BF] bg-[#FFF9F2] p-4 sm:p-5">
+        <h3 id="titulo-lista-compras" class="text-lg font-bold text-nogal">Compras registradas</h3>
 
         <p class="text-sm text-gray-600">
           Mostrando {{ comprasFiltradas().length }} de {{ compras().length }}
@@ -168,25 +195,26 @@
           No hay compras que coincidan con los filtros.
         </div>
       } @else {
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm">
+        <div role="region" aria-labelledby="titulo-lista-compras" tabindex="0" class="lista-scroll overflow-auto rounded-b-2xl focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#4B2E1F]">
+          <table class="lista-tabla w-full border-separate border-spacing-0 text-left text-sm">
             <thead class="bg-[#F9E9D5] text-nogal">
               <tr>
-                <th class="px-5 py-4">Compra</th>
-                <th class="px-5 py-4">Proveedor</th>
-                <th class="px-5 py-4">Detalles</th>
-                <th class="px-5 py-4">Total</th>
-                <th class="px-5 py-4">Estado</th>
-                <th class="px-5 py-4">Acciones</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-5 identificador">Compra</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-5">Proveedor</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-5">Detalles</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-5">Total</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-5">Estado</th>
+                <th scope="col" class="sticky top-0 px-3 py-3 sm:px-5">Acciones</th>
               </tr>
             </thead>
 
             <tbody>
               @for (compra of comprasFiltradas(); track compra.id_compra) {
-                <tr class="border-t border-gray-100 align-top hover:bg-[#FFF9F2]">
+                <tr class="align-top hover:bg-[#FFF9F2] focus-within:bg-[#FFF9F2]">
                   <!-- DATOS DE COMPRA -->
-                  <td class="px-5 py-4">
+                  <th scope="row" class="identificador px-3 py-4 font-normal sm:px-5">
                     <p class="font-bold text-nogal">#{{ compra.id_compra }}</p>
+                    <p class="mt-1 text-xs text-nogal">{{ nombreProveedor(compra.id_proveedor) }}</p>
 
                     <p class="mt-1 text-xs text-gray-500">
                       {{ compra.fecha }}
@@ -197,7 +225,7 @@
                         Ref: {{ compra.referencia_documento }}
                       </p>
                     }
-                  </td>
+                  </th>
 
                   <!-- PROVEEDOR -->
                   <td class="px-5 py-4 text-gray-700">
@@ -219,11 +247,16 @@
                               {{ nombreMaterial(detalle.id_material) }}
                             </p>
 
-                            <p>Cantidad: {{ detalle.cantidad }}</p>
+                            @let unidad = unidadMaterial(detalle.id_material);
+                            @let cantidad = cantidadTexto(detalle.cantidad, unidad);
+                            <p>Cantidad: {{ cantidad.texto }} · {{ unidad }}</p>
+                            @if (cantidad.aviso) {
+                              <p class="text-xs text-gray-700">{{ cantidad.aviso }}</p>
+                            }
 
-                            <p>Costo: ${{ detalle.costo_unitario }}</p>
+                            <p>Costo: {{ dinero(detalle.costo_unitario) }}</p>
 
-                            <p>Subtotal: ${{ detalle.subtotal }}</p>
+                            <p>Subtotal: {{ dinero(detalle.subtotal) }}</p>
                           </div>
                         }
                       </div>
@@ -231,7 +264,7 @@
                   </td>
 
                   <!-- TOTAL -->
-                  <td class="px-5 py-4 font-bold text-nogal">${{ compra.total }}</td>
+                  <td class="px-5 py-4 font-bold text-nogal">{{ dinero(compra.total) }}</td>
 
                   <!-- ESTADO -->
                   <td class="px-5 py-4">
@@ -260,6 +293,13 @@
                   <td class="px-5 py-4">
                     @if (compra.estado === 'BORRADOR') {
                       <div class="flex flex-col gap-2">
+                        @if (compra.revision) {
+                          <button type="button" (click)="abrirBorrador(compra.id_compra)"
+                            [disabled]="guardando() || abriendoBorrador()"
+                            class="rounded-lg border border-nogal px-3 py-2 font-semibold text-nogal">
+                            Editar borrador
+                          </button>
+                        }
                         <button
                           type="button"
                           (click)="solicitarAccion(compra, 'RECIBIR')"
@@ -297,22 +337,39 @@
     @if (mostrarFormulario()) {
       <section
         id="formulario-compra"
-        class="mt-8 scroll-mt-6 rounded-xl border border-[#E8D6BF] bg-white p-6 shadow-sm"
+        class="mt-8 scroll-mt-6 rounded-2xl border border-[#E8D6BF] bg-white p-4 shadow-sm sm:p-6"
       >
         <div class="mb-6 flex justify-between gap-3">
-          <h3 class="text-xl font-bold text-nogal">Registrar compra de materiales</h3>
+          <h3 id="titulo-formulario-compra" tabindex="-1" class="text-xl font-bold text-nogal">
+            {{ borrador() ? 'Editar borrador #' + borrador()?.id_compra : 'Registrar compra de materiales' }}
+          </h3>
 
           <button
             type="button"
             (click)="cerrarFormulario()"
             [disabled]="guardando()"
             class="font-semibold text-gray-600"
-          >
+      >
             Cerrar
           </button>
         </div>
 
         <form (ngSubmit)="guardarCompra()">
+          <fieldset class="min-w-0" [disabled]="guardando() || abriendoBorrador()">
+          @if (error()) { <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{{ error() }}</p> }
+          <div class="contexto-formulario sticky z-30 mb-5 rounded-lg border border-[#E8D6BF] bg-[#FFF9F2] px-3 py-2 text-sm font-semibold text-nogal">
+            <p class="truncate">
+              {{ borrador() ? 'Borrador #' + borrador()?.id_compra : 'Nueva compra' }} · {{ formulario.id_proveedor ? nombreProveedor(formulario.id_proveedor) : 'Selecciona un proveedor' }}
+              @if (ordenFormulario(); as orden) { · Orden #{{ orden }} }
+            </p>
+          </div>
+          @if (conflictoEdicion() && borrador(); as compra) {
+            <div role="alert" class="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-amber-950">
+              <p>El borrador cambió mientras lo editabas. Tus cambios siguen en el formulario. Si recargas, se reemplazarán con la versión guardada.</p>
+              <button type="button" class="mt-2 rounded-lg border border-nogal px-3 py-2 font-semibold"
+                [disabled]="abriendoBorrador()" (click)="abrirBorrador(compra.id_compra)">Recargar borrador</button>
+            </div>
+          }
           <!-- DATOS GENERALES -->
           <div class="grid gap-5 md:grid-cols-2">
             <div>
@@ -323,7 +380,8 @@
               <select
                 id="proveedorCompra"
                 name="proveedor"
-                [(ngModel)]="formulario.id_proveedor"
+                [ngModel]="formulario.id_proveedor"
+                (ngModelChange)="cambiarProveedor($event)"
                 required
                 class="w-full rounded-lg border border-gray-300 p-3"
               >
@@ -403,6 +461,7 @@
                     [name]="'material-' + i"
                     [(ngModel)]="detalle.id_material"
                     (ngModelChange)="cambiarMaterial(detalle, $event)"
+                    [disabled]="esPrecargado(detalle)"
                     required
                     class="w-full rounded-lg border border-gray-300 p-3"
                   >
@@ -419,6 +478,9 @@
                 <div>
                   <label [for]="'cantidad-' + i" class="mb-2 block text-sm font-medium text-nogal">
                     Cantidad
+                    @if (detalle.id_material) {
+                      <span class="font-normal">· {{ unidadMaterial(detalle.id_material) }}</span>
+                    }
                   </label>
 
                   <input
@@ -427,10 +489,17 @@
                     type="text"
                     inputmode="decimal"
                     [(ngModel)]="detalle.cantidad"
+                    #cantidadControl="ngModel"
+                    [attr.aria-invalid]="cantidadControl.touched && !decimalCompraValido(detalle.cantidad) ? 'true' : null"
+                    [attr.aria-describedby]="cantidadControl.touched && !decimalCompraValido(detalle.cantidad) ? 'error-cantidad-' + i : null"
+                    (ngModelChange)="quitarPresentacion(detalle)"
                     required
-                    placeholder="1.0000"
+                    placeholder="Ej. 1"
                     class="w-full rounded-lg border border-gray-300 p-3"
                   />
+                  @if (cantidadControl.touched && !decimalCompraValido(detalle.cantidad)) {
+                    <p [id]="'error-cantidad-' + i" class="mt-1 text-sm text-red-800">Ingresa una cantidad positiva con hasta cuatro decimales.</p>
+                  }
                 </div>
 
                 <div>
@@ -444,10 +513,17 @@
                     type="text"
                     inputmode="decimal"
                     [(ngModel)]="detalle.costo_unitario"
+                    #costoControl="ngModel"
+                    [attr.aria-invalid]="costoControl.touched && !decimalCompraValido(detalle.costo_unitario) ? 'true' : null"
+                    [attr.aria-describedby]="costoControl.touched && !decimalCompraValido(detalle.costo_unitario) ? 'error-costo-' + i : null"
+                    (ngModelChange)="quitarPresentacion(detalle)"
                     required
                     placeholder="Costo real por unidad"
                     class="w-full rounded-lg border border-gray-300 p-3"
                   />
+                  @if (costoControl.touched && !decimalCompraValido(detalle.costo_unitario)) {
+                    <p [id]="'error-costo-' + i" class="mt-1 text-sm text-red-800">Ingresa un costo mayor que cero con hasta cuatro decimales.</p>
+                  }
 
                   <p class="mt-1 text-xs text-gray-500">
                     @if (tieneHistorialCosto(detalle.id_material)) {
@@ -458,12 +534,12 @@
                   </p>
 
                   <p class="mt-2 text-xs text-gray-500">
-                    Subtotal: ${{ subtotalDetalle(detalle).toFixed(2) }}
+                    Subtotal: {{ dinero(subtotalDetalle(detalle)) }}
                   </p>
                   <p class="mt-1 text-xs text-gray-600">
                     Precio base en catálogo:
                     @if (costoBaseMaterial(detalle.id_material)) {
-                      ${{ costoBaseMaterial(detalle.id_material) }}
+                      {{ dinero(costoBaseMaterial(detalle.id_material)) }}
                     } @else {
                       Sin precio base
                     }
@@ -484,12 +560,35 @@
                   <button
                     type="button"
                     (click)="quitarDetalle(i)"
-                    [disabled]="formulario.detalles.length <= 1"
+                    [disabled]="formulario.detalles.length <= 1 || esPrecargado(detalle) || guardando()"
                     class="w-full rounded-lg border border-red-300 px-3 py-3 font-semibold text-red-700 disabled:opacity-40"
                   >
                     Quitar
                   </button>
                 </div>
+                @if (presentaciones(detalle); as ofertas) {
+                  @if (ofertas.length || detalle.presentacion_aplicada) {
+                    <div class="min-w-0 md:col-span-4">
+                      @if (ofertas.length) {
+                        <label [for]="'presentacion-' + i" class="mb-1 block text-sm font-semibold text-nogal">Presentación verificada del proveedor</label>
+                        <select [id]="'presentacion-' + i" [name]="'presentacion-' + i"
+                          [ngModel]="detalle.id_cotizacion ?? null" (ngModelChange)="elegirPresentacion(detalle, $event)"
+                          class="w-full rounded-lg border border-gray-300 p-2">
+                          <option [ngValue]="null">Comprar por unidad del material</option>
+                          @for (oferta of ofertas; track oferta.id_cotizacion) {
+                            <option [ngValue]="oferta.id_cotizacion">{{ oferta.presentacion }} · {{ dinero(oferta.precio_presentacion) }} por presentación</option>
+                          }
+                        </select>
+                      }
+                      @if (detalle.presentacion_aplicada) {
+                        <p class="my-2 text-sm text-gray-700">{{ detalle.cantidad_presentaciones }} × {{ detalle.presentacion_aplicada }}.
+                          Ingreso previsto: {{ cantidadTexto(detalle.cantidad, unidadMaterial(detalle.id_material)).texto }} {{ unidadMaterial(detalle.id_material) }}.
+                        </p>
+                        <button type="button" class="rounded-lg border border-nogal px-3 py-2 text-sm" (click)="quitarPresentacion(detalle)">Quitar presentación</button>
+                      }
+                    </div>
+                  }
+                }
               </div>
             }
 
@@ -524,13 +623,13 @@
 
           <!-- TOTAL Y ACCIONES -->
           <div
-            class="sticky bottom-0 z-20 -mx-6 mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-[#E8D6BF] bg-white/95 px-6 py-4 shadow-[0_-5px_20px_rgba(75,46,31,0.08)] backdrop-blur-sm supports-[backdrop-filter]:bg-white/90"
+            class="acciones-compra z-20 mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[#E8D6BF] bg-white py-3"
           >
             <div>
               <p class="text-sm text-gray-600">Total estimado de compra</p>
 
               <p class="text-2xl font-bold text-nogal">
-                ${{ totalFormulario().toFixed(2) }}
+                {{ dinero(totalFormulario()) }}
                 MXN
               </p>
             </div>
@@ -547,13 +646,14 @@
 
               <button
                 type="submit"
-                [disabled]="guardando()"
+                [disabled]="guardando() || abriendoBorrador() || conflictoEdicion()"
                 class="rounded-lg bg-terracota px-6 py-3 font-semibold text-white hover:bg-nogal disabled:opacity-50"
               >
                 {{ guardando() ? 'Guardando...' : 'Guardar borrador' }}
               </button>
             </div>
           </div>
+          </fieldset>
         </form>
       </section>
     }
@@ -563,7 +663,7 @@
     ================================================ -->
 
     @if (compraPendiente(); as pendiente) {
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div class="fixed inset-0 z-50 grid place-items-center overflow-auto bg-black/50 p-4">
         <section
           role="alertdialog"
           aria-modal="true"

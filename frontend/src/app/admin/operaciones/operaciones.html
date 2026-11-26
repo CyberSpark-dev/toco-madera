@@ -1,69 +1,71 @@
 <!-- Toco Madera — Etapa 3.20.4. Operaciones reales protegidas por JWT ADMIN. -->
-<div class="min-h-screen bg-[#F9E9D5] px-4 py-8 text-[#4B2E1F]">
+<div class="min-h-screen bg-crema px-4 py-6 text-nogal sm:px-6 sm:py-8">
   <main class="mx-auto max-w-7xl space-y-6">
-    <header class="flex flex-wrap items-center justify-between gap-3">
+    <header class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E8D6BF] bg-[#FFF9F2] p-4 shadow-sm sm:p-6">
       <div>
-        <h1 class="text-3xl font-bold">Taller y entregas</h1>
+        <h1 class="font-brand text-2xl font-bold sm:text-3xl">Producción y entregas</h1>
         <p class="mt-1 text-sm text-[#6B5140]">Flujo administrativo completo: autorización → fabricación → recolección → entrega.</p>
       </div>
-      <nav class="flex flex-wrap gap-2">
-        <a routerLink="/admin/pedidos" class="rounded-lg border border-[#A65A2E] px-4 py-2 text-sm font-semibold">Autorizaciones</a>
-        <a routerLink="/admin/dashboard" class="rounded-lg border border-[#A65A2E] px-4 py-2 text-sm font-semibold">Dashboard</a>
+      <div class="flex flex-wrap gap-2">
+        <a routerLink="/admin/pedidos" class="rounded-lg border border-[#A65A2E] px-4 py-2 text-sm font-semibold">Pedidos y autorizaciones</a>
         <button type="button" [disabled]="ocupado() || cargando()" (click)="cargar()"
           class="rounded-lg bg-[#A65A2E] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Actualizar</button>
-      </nav>
+      </div>
     </header>
 
     <p class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
       Entorno académico: los pagos son <strong>simulados</strong>, no hay cobros bancarios. Las acciones de fabricación y entrega
-      <strong>sí escriben movimientos reales en tu MySQL local</strong> y no deben repetirse.
+      <strong>actualizan las existencias y el estado del pedido</strong> y no deben repetirse.
     </p>
     @if (error()) { <p role="alert" class="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">{{ error() }}</p> }
     @if (mensaje()) { <p role="status" class="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">{{ mensaje() }}</p> }
     @if (ocupado()) { <p role="status" class="text-sm font-semibold text-[#A65A2E]">Procesando solicitud...</p> }
 
-    <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.3fr)]">
-      <aside class="space-y-3" aria-label="Pedidos">
+    <div class="grid items-start gap-5 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.35fr)]">
+      <aside class="lista-operaciones min-w-0 space-y-3 overflow-auto rounded-2xl p-1" aria-label="Pedidos" tabindex="0">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h2 class="text-xl font-bold">Pedidos</h2>
-          <div class="flex gap-2 text-xs">
-            <button type="button" (click)="cambiarFiltro('ACTIVOS')" [class]="filtro() === 'ACTIVOS' ? 'rounded-full border border-[#A65A2E] bg-[#A65A2E] px-3 py-1 text-white' : 'rounded-full border border-[#A65A2E] px-3 py-1'">Activos</button>
-            <button type="button" (click)="cambiarFiltro('TODOS')" [class]="filtro() === 'TODOS' ? 'rounded-full border border-[#A65A2E] bg-[#A65A2E] px-3 py-1 text-white' : 'rounded-full border border-[#A65A2E] px-3 py-1'">Todos</button>
+          <div role="group" aria-label="Filtrar pedidos" class="flex flex-wrap gap-2 text-xs">
+            <button type="button" (click)="cambiarFiltro('ACTIVOS')" [attr.aria-pressed]="filtro() === 'ACTIVOS'" [class]="filtro() === 'ACTIVOS' ? 'rounded-full border border-[#A65A2E] bg-[#A65A2E] px-3 py-1 text-white' : 'rounded-full border border-[#A65A2E] px-3 py-1'">Activos</button>
+            <button type="button" (click)="cambiarFiltro('TODOS')" [attr.aria-pressed]="filtro() === 'TODOS'" [class]="filtro() === 'TODOS' ? 'rounded-full border border-[#A65A2E] bg-[#A65A2E] px-3 py-1 text-white' : 'rounded-full border border-[#A65A2E] px-3 py-1'">Todos</button>
           </div>
         </div>
         @if (cargando()) { <p class="rounded-xl bg-white p-4">Cargando pedidos...</p> }
         @for (p of pedidosFiltrados(); track p.id_pedido) {
-          <button type="button" (click)="seleccionar(p.id_pedido)" [disabled]="ocupado()"
+          <button type="button" (click)="seleccionar(p.id_pedido)" [attr.aria-pressed]="idSeleccionado() === p.id_pedido" [disabled]="ocupado()"
             [class]="idSeleccionado() === p.id_pedido ? 'block w-full rounded-xl border-2 border-[#A65A2E] bg-white p-4 text-left shadow-sm hover:shadow-md disabled:opacity-60' : 'block w-full rounded-xl border border-[#E8D6BF] bg-white p-4 text-left shadow-sm hover:shadow-md disabled:opacity-60'">
             <span class="flex flex-wrap items-center justify-between gap-2">
               <span class="font-bold">Pedido #{{ p.id_pedido }}</span>
-              <span class="rounded bg-[#F9E9D5] px-2 py-1 text-xs">{{ p.estado }}</span>
+              <span class="rounded bg-[#F9E9D5] px-2 py-1 text-xs">{{ etiquetaPedido(p.estado) }}</span>
             </span>
             <span class="mt-1 block break-all text-xs text-gray-500">{{ p.folio }}</span>
             <span class="mt-1 block text-sm">{{ p.cliente_nombre }}</span>
             <span class="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-              <span>Entrega: {{ p.estado_entrega || 'SIN PROGRAMAR' }}</span>
+              <span>Entrega: {{ etiquetaPedido(p.estado_entrega || 'SIN_PROGRAMAR') }}</span>
               <strong>Saldo: {{ dinero(p.saldo_simulado) }}</strong>
             </span>
           </button>
         } @empty { @if (!cargando()) { <p class="rounded-xl bg-white p-4">No hay pedidos en el filtro.</p> } }
       </aside>
 
-      <section class="space-y-5" aria-label="Operación del pedido">
+      <section class="min-w-0 space-y-5" aria-label="Operación del pedido">
         @if (pedido(); as p) {
-          <div class="rounded-xl border border-[#E8D6BF] bg-white p-5 shadow-sm">
-            <h2 class="text-2xl font-bold">Pedido #{{ p.id_pedido }}</h2>
-            <p class="mt-1 break-all text-xs text-gray-500">{{ p.folio }}</p>
+          <header class="contexto-operaciones sticky z-20 rounded-lg border border-[#E8D6BF] bg-[#FFF9F2] px-3 py-2 shadow-sm">
+            <h2 class="truncate font-brand text-base font-bold" [title]="p.folio">{{ p.folio }}</h2>
+            <p class="text-xs">Pedido #{{ p.id_pedido }} · {{ etiquetaPedido(p.estado) }}</p>
+          </header>
+          <div class="rounded-2xl border border-[#E8D6BF] bg-white p-4 shadow-sm sm:p-5">
+            <h3 class="font-brand text-lg font-semibold">Datos del pedido</h3>
             <div class="mt-4 grid gap-2 text-sm sm:grid-cols-2">
               <p><strong>Cliente:</strong> {{ p.cliente_nombre }}</p>
-              <p><strong>Estado:</strong> {{ p.estado }}</p>
-              <p><strong>Autorización:</strong> {{ autorizacion() }}</p>
+              <p><strong>Estado:</strong> {{ etiquetaPedido(p.estado) }}</p>
+              <p><strong>Autorización:</strong> {{ etiquetaPedido(autorizacion()) }}</p>
               <p><strong>Saldo simulado:</strong> {{ dinero(p.saldo_simulado) }}</p>
-              <p><strong>Entrega:</strong> {{ p.estado_entrega || 'PENDIENTE' }}</p>
+              <p><strong>Entrega:</strong> {{ etiquetaPedido(p.estado_entrega || 'SIN_PROGRAMAR') }}</p>
               <p><strong>Modalidad:</strong> {{ p.tipo_entrega }}</p>
             </div>
             @if (autorizacion()==='POR_REVISAR' && p.estado!=='ENTREGADO') {
-              <p class="mt-3 rounded-lg bg-amber-50 p-3 text-sm">Primero autoriza el pedido en <a routerLink="/admin/pedidos" class="font-bold underline">Revisión de pedidos</a>.</p>
+              <p class="mt-3 rounded-lg bg-amber-50 p-3 text-sm">Primero autoriza el pedido en <a routerLink="/admin/pedidos" class="font-bold underline">Pedidos y autorizaciones</a>.</p>
             }
             @if (p.estado==='ENTREGADO') {
               <p class="mt-3 rounded-lg bg-green-50 p-3 font-semibold text-green-900">Pedido histórico entregado. No se permiten operaciones adicionales.</p>
@@ -73,36 +75,46 @@
 
           @if (p.estado!=='ENTREGADO' && p.estado!=='CANCELADO') {
             <!-- ETAPA 1: FABRICACIÓN -->
-            <div class="rounded-xl border border-[#E8D6BF] bg-white p-5 shadow-sm space-y-4">
+            <div class="rounded-2xl border border-[#E8D6BF] bg-white p-4 shadow-sm sm:p-5 space-y-4">
               <div><h3 class="text-xl font-bold">1. Producción y materiales</h3>
                 <p class="text-sm text-gray-600">Planificar el detalle, iniciar orden, verificar insumos, consumirlos y registrar lote terminado.</p></div>
 
               @if (autorizacion()!=='APROBADO') {
-                <p class="rounded-lg bg-amber-50 p-3 text-sm">Se requiere autorización ADMIN para iniciar una fabricación nueva.</p>
+                <p class="rounded-lg bg-amber-50 p-3 text-sm">Se requiere autorización para iniciar una orden de fabricación.</p>
               }
               @for (d of pendientesPedido(); track d.id_detalle_pedido) {
                 <article class="rounded-lg border border-[#E3C6A9] bg-[#FFF9F2] p-4 space-y-2">
                   <p class="font-bold">{{ d.producto }} · detalle #{{ d.id_detalle_pedido }}</p>
                   <p class="text-sm">Unidades sin planificar: <strong>{{ d.cantidad_pendiente }}</strong></p>
-                  @if (d.texto_grabado) { <p class="text-sm">Grabado: {{ d.texto_grabado }}</p> }
+                  @if (d.texto_grabado) { <p class="whitespace-pre-wrap text-sm">Grabado: {{ d.texto_grabado }}</p> }
                   <p class="text-xs">Recetas vigentes: {{ d.recetas_vigentes }}</p>
+                  @let bloqueo = bloqueoPlanificacion(d);
+                  @let errorCantidad = bloqueo ? '' : errorCantidadPlanificar(d);
                   <div class="flex flex-wrap items-end gap-2">
                     <label class="text-sm font-medium">Cantidad a planificar
-                      <input type="number" min="1" [max]="d.cantidad_pendiente" step="1" class="mt-1 block w-28 rounded border p-2"
-                        [value]="cantidadPlanificar(d)" (input)="cambiarCantidad(d.id_detalle_pedido,$any($event.target).value)" />
+                      <input type="number" min="1" [max]="maximoPlanificable(d)" step="1" class="mt-1 block w-28 rounded border p-2"
+                        [ngModel]="cantidadPlanificar(d)" (ngModelChange)="cambiarCantidad(d.id_detalle_pedido, $event)"
+                        [disabled]="ocupado() || !!bloqueo"
+                        [attr.aria-invalid]="errorCantidad ? 'true' : null"
+                        [attr.aria-describedby]="bloqueo || errorCantidad ? 'planificar-aviso-' + d.id_detalle_pedido : null" />
                     </label>
-                    <button type="button" [disabled]="ocupado() || d.recetas_vigentes===0 || autorizacion()!=='APROBADO'"
+                    <button type="button" [disabled]="ocupado() || !!bloqueo || !!errorCantidad"
                       (click)="planificar(d)" class="rounded-lg bg-[#A65A2E] px-4 py-2 text-sm font-bold text-white disabled:opacity-40">Planificar orden</button>
                   </div>
+                  @if (bloqueo || errorCantidad) {
+                    <p [id]="'planificar-aviso-' + d.id_detalle_pedido" class="text-sm text-red-800" aria-live="polite">
+                      {{ bloqueo || errorCantidad }}
+                    </p>
+                  }
                 </article>
               } @empty { <p class="text-sm text-gray-600">No quedan detalles de fabricación sin planificar para este pedido.</p> }
 
               <h4 class="border-t pt-3 font-bold">Órdenes asociadas a este pedido</h4>
               @for (o of ordenesPedido(); track o.id_orden) {
-                <article class="space-y-3 rounded-lg border border-[#E3C6A9] p-4">
-                  <div class="flex flex-wrap items-center justify-between gap-2">
+                <article [id]="'orden-' + o.id_orden" class="scroll-mt-16 space-y-3 rounded-xl border border-[#E3C6A9] p-3 sm:p-4">
+                  <div class="contexto-orden flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white">
                     <div><p class="font-bold">Orden #{{ o.id_orden }} · {{ o.producto }}</p>
-                      <p class="text-sm">{{ o.cantidad }} unidad(es) · {{ o.estado }}</p></div>
+                      <p class="text-sm">{{ o.cantidad }} unidad(es) · {{ etiquetaPedido(o.estado) }}</p></div>
                     @if (o.estado==='FINALIZADA') { <span class="rounded bg-green-100 px-3 py-1 text-xs font-bold text-green-900">Lote terminado registrado</span> }
                   </div>
                   @if (o.estado==='PLANIFICADA') {
@@ -117,10 +129,37 @@
                     @if (materiales()[o.id_orden]; as verificacion) {
                       <div class="rounded-lg bg-[#FFF9F2] p-3 text-sm space-y-2">
                         <p class="font-semibold">Materiales de la receta</p>
-                        @for (m of verificacion.materiales; track m.nombre) {
-                          <p>{{ m.nombre }} · Requerido {{ m.cantidad_requerida }} · Disponible {{ m.stock_disponible }} · {{ m.suficiente ? 'SUFICIENTE' : 'INSUFICIENTE' }}</p>
-                        }
+                        <ul class="space-y-2">
+                          @for (m of verificacion.materiales; track $index) {
+                            @let unidad = unidadMaterial(m);
+                            @let requerido = cantidadMaterial(m.cantidad_requerida, unidad);
+                            @let disponible = cantidadMaterial(m.stock_disponible, unidad);
+                            <li class="rounded-lg border border-[#E8D6BF] bg-white p-3">
+                              <div class="flex flex-wrap items-center justify-between gap-2">
+                                <p class="font-semibold">{{ m.nombre }}</p>
+                                <span class="rounded-full px-2 py-1 text-xs font-semibold" [class]="m.suficiente ? 'bg-green-100 text-green-900' : 'bg-amber-100 text-amber-900'">
+                                  {{ m.suficiente ? 'Suficiente' : 'Insuficiente' }}
+                                </span>
+                              </div>
+                              <p class="mt-1"><strong>Unidad:</strong> {{ unidad }}</p>
+                              <dl class="mt-1 grid gap-2 sm:grid-cols-2">
+                                <div><dt>Requerido</dt><dd class="font-semibold">{{ requerido.texto }}</dd>
+                                  @if (requerido.aviso) { <dd class="text-xs text-gray-700">{{ requerido.aviso }}</dd> }
+                                </div>
+                                <div><dt>Disponible</dt><dd class="font-semibold">{{ disponible.texto }}</dd>
+                                  @if (disponible.aviso) { <dd class="text-xs text-gray-700">{{ disponible.aviso }}</dd> }
+                                </div>
+                              </dl>
+                            </li>
+                          }
+                        </ul>
                         @if (verificacion.ya_consumida) { <p>Los materiales ya fueron consumidos para esta orden.</p> }
+                        @if (tieneFaltantesComprables(verificacion)) {
+                          <a routerLink="/admin/compras" [queryParams]="{ orden: o.id_orden, folio: p.folio }"
+                            class="inline-flex min-h-11 items-center rounded-lg bg-nogal px-4 py-2 font-semibold text-white hover:bg-terracota">
+                            Preparar compra de materiales faltantes
+                          </a>
+                        }
                         @if (verificacion.puede_consumir) {
                           <button type="button" [disabled]="ocupado()" (click)="consumir(o)" class="rounded bg-red-800 px-3 py-2 font-bold text-white disabled:opacity-40">Confirmar consumo de materiales</button>
                         }
@@ -141,7 +180,7 @@
             </div>
 
             <!-- ETAPA 2: PROGRAMACIÓN -->
-            <div class="rounded-xl border border-[#E8D6BF] bg-white p-5 shadow-sm space-y-3">
+            <div class="rounded-2xl border border-[#E8D6BF] bg-white p-4 shadow-sm sm:p-5 space-y-3">
               <h3 class="text-xl font-bold">2. Programar recolección</h3>
               <p class="text-sm text-gray-600">Define una fecha futura y el punto de recolección acordado con el cliente.</p>
               <label class="block text-sm font-semibold">Fecha y hora local
@@ -159,25 +198,25 @@
             </div>
 
             <!-- ETAPA 3: LISTO -->
-            <div class="rounded-xl border border-[#E8D6BF] bg-white p-5 shadow-sm space-y-3">
+            <div class="rounded-2xl border border-[#E8D6BF] bg-white p-4 shadow-sm sm:p-5 space-y-3">
               <h3 class="text-xl font-bold">3. Marcar producto listo</h3>
-              <p class="text-sm text-gray-600">Flask comprueba que todos los detalles tengan inventario terminado suficiente. Si falta un lote, responde con el motivo y no cambia el estado.</p>
+              <p class="text-sm text-gray-600">Para marcar el pedido como listo deben estar disponibles todos los productos terminados.</p>
               <button type="button" [disabled]="ocupado() || !puedeListo()" (click)="listo()"
                 class="rounded-lg bg-[#718063] px-4 py-2 font-bold text-white disabled:opacity-40">Marcar LISTO</button>
-              @if (p.estado==='LISTO') { <p class="font-semibold text-green-800">Pedido LISTO para recoger.</p> }
+              @if (p.estado==='LISTO') { <p class="font-semibold text-green-800">Pedido listo para recoger.</p> }
             </div>
 
             <!-- ETAPA 4: SALDO -->
-            <div class="rounded-xl border border-[#E8D6BF] bg-white p-5 shadow-sm space-y-3">
+            <div class="rounded-2xl border border-[#E8D6BF] bg-white p-4 shadow-sm sm:p-5 space-y-3">
               <h3 class="text-xl font-bold">4. Liquidación simulada</h3>
               <p class="text-sm">Saldo registrado: <strong>{{ dinero(p.saldo_simulado) }}</strong></p>
-              <p class="text-xs text-gray-600">No introduce datos bancarios y no cobra dinero real. Se añade un registro de pago simulado en MySQL.</p>
+              <p class="text-xs text-gray-600">No introduce datos bancarios y no cobra dinero real. El pago se añade al historial como simulado.</p>
               <button type="button" [disabled]="ocupado() || !puedeLiquidar()" (click)="liquidar()"
                 class="rounded-lg bg-[#A65A2E] px-4 py-2 font-bold text-white disabled:opacity-40">Registrar liquidación simulada</button>
             </div>
 
             <!-- ETAPA 5: ENTREGA -->
-            <div class="rounded-xl border border-[#E8D6BF] bg-white p-5 shadow-sm space-y-3">
+            <div class="rounded-2xl border border-[#E8D6BF] bg-white p-4 shadow-sm sm:p-5 space-y-3">
               <h3 class="text-xl font-bold">5. Confirmar entrega</h3>
               <p class="text-sm text-gray-600">Solo disponible con pedido LISTO, entrega PROGRAMADA y saldo cero. La confirmación registra una salida real de inventario.</p>
               <label class="block text-sm font-semibold">Nombre del receptor

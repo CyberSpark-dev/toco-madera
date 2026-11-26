@@ -1,3 +1,5 @@
+import { mensajeNotificable } from '../../core/services/notificaciones';
+import { mensajeError } from '../../core/utils/mensajes';
 /**
  * ==========================================================
  * TOCO MADERA - ADMINISTRACIÓN DE MATERIAS PRIMAS
@@ -25,7 +27,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -43,7 +45,7 @@ import { formatearCantidad } from '../../core/utils/cantidades';
   selector: 'app-materiales-admin',
   standalone: true,
 
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule],
 
   templateUrl: './materiales.html',
   styleUrl: './materiales.css',
@@ -77,13 +79,13 @@ export class MaterialesAdmin implements OnInit {
 
   readonly guardando = signal(false);
 
-  readonly error = signal('');
+  readonly error = mensajeNotificable('error');
 
   readonly errorUnidades = signal('');
 
-  readonly errorFormulario = signal('');
+  readonly errorFormulario = mensajeNotificable('error');
 
-  readonly mensaje = signal('');
+  readonly mensaje = mensajeNotificable('exito');
 
   // ========================================================
   // 4. BÚSQUEDA Y FILTROS
@@ -208,9 +210,7 @@ export class MaterialesAdmin implements OnInit {
         }
 
         const detalle =
-          typeof error.error?.message === 'string'
-            ? error.error.message
-            : 'Verifica la conexión con Flask.';
+          mensajeError(error, 'Inténtalo nuevamente.');
 
         this.errorUnidades.set('No se pudieron consultar las unidades. ' + detalle);
       },
@@ -461,7 +461,7 @@ export class MaterialesAdmin implements OnInit {
 
         this.errorFormulario.set('');
 
-        this.mensaje.set(respuesta.message);
+        this.mensaje.set(idMaterial === null ? 'Material registrado correctamente.' : 'Los cambios se guardaron correctamente.');
 
         // Obtener nuevamente los datos desde MySQL.
         this.cargarMateriales();
@@ -484,9 +484,7 @@ export class MaterialesAdmin implements OnInit {
 
         // Mantener el formulario abierto.
         const mensajeServidor =
-          typeof error.error?.message === 'string'
-            ? error.error.message
-            : 'No fue posible guardar el material.';
+          mensajeError(error, 'No fue posible guardar el material.');
 
         this.errorFormulario.set(mensajeServidor);
       },
@@ -542,7 +540,7 @@ export class MaterialesAdmin implements OnInit {
 
         this.materialPendiente.set(null);
 
-        this.mensaje.set(respuesta.message);
+        this.mensaje.set(nuevoEstado ? 'Material activado correctamente.' : 'Material desactivado correctamente.');
 
         this.cargarMateriales();
       },
@@ -582,9 +580,7 @@ export class MaterialesAdmin implements OnInit {
       return;
     }
 
-    const mensajeServidor = typeof error.error?.message === 'string' ? error.error.message : null;
-
-    this.error.set(mensajeServidor ?? mensajePredeterminado);
+    this.error.set(mensajeError(error, mensajePredeterminado));
   }
 
   // ========================================================

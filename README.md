@@ -1,101 +1,39 @@
-# Toco Madera — PWA v1.0
+# Toco Madera v1.1
 
-> **Frases que vienen de raíz y se graban en el corazón.**
+> Frases que vienen de raíz y se guardan en el corazón
 
-**Toco Madera** es una aplicación web progresiva (PWA) académica para la gestión de una empresa que transforma materia prima de madera en artículos artesanales personalizables. El proyecto fue desarrollado para una demostración local en **León, Guanajuato, México**, con interfaces de **cliente** y **administrador**.
-
-**Versión de entrega:** `v1.0` · **Fecha:** 21 de noviembre de 2026 · **Repositorio principal:** https://github.com/CyberSpark-dev/toco-madera
-
-> **Estado:** la instalación de la PWA desde Chrome fue confirmada durante las pruebas manuales. La aplicación está orientada a una demostración académica local; no es una pasarela de pagos reales ni un despliegue productivo. Las verificaciones finales de flujo completo y rendimiento deben documentarse antes de presentar la entrega como validada integralmente.
+PWA académica para una tienda y taller de artículos artesanales de madera en León, Guanajuato, México.
 
 ## Funcionalidades
 
-### Cliente
-- Consultar el catálogo de seis productos con fotografías y precios consultados en MySQL.
-- Registrarse e iniciar sesión con **JWT**; nombre, correo y teléfono obligatorios.
-- Gestionar su perfil («Mi cuenta») y cambiar su contraseña.
-- Administrar un carrito de compras asociado a su sesión.
-- Solicitar grabado artesanal personalizado cuando el artículo lo permita.
-- Confirmar pedidos con pago **simulado**, al 50 % de anticipo o al 100 %.
-- Consultar folio, autorización, pago, saldo y estado de entrega desde «Mis pedidos».
-- Solicitar la cancelación de pedidos elegibles, sujeta a restricciones operativas; el historial se conserva y no se procesan reembolsos reales porque los pagos son ficticios.
+- **Tienda**. Inicio con carrusel de cuatro fotografías, catálogo dinámico, registro, inicio de sesión y Mi cuenta. Los productos personalizables muestran una vista previa ilustrativa con Great Vibes sobre sus fotografías limpias. El rodillo usa el cuerpo cilíndrico. El texto de grabado se conserva en el carrito, la confirmación y el pedido.
+- **Pedidos**. Carrito asociado al cliente, checkout, pagos simulados con anticipo del 50 % o pago total, consulta de saldo y seguimiento de entrega. Se puede cancelar un pedido propio confirmado antes de que exista una orden de producción, reserva activa o entrega. La autorización del taller por sí sola conserva esa opción. Los pagos quedan en el historial sin devolución.
+- **Administración**. Dashboard, clientes, productos, materias primas, inventario, proveedores, compras, recetas, pedidos y autorizaciones, y producción y entregas. Las compras asistidas consultan los faltantes, permiten preparar y editar borradores y registran la entrada de inventario al recibir los materiales.
+- **PWA**. Botón «Instalar Toco Madera», manifiesto con iconos normales y enmascarable, y Service Worker en producción. Se guardan recursos estáticos. El catálogo actualizado y las operaciones requieren acceso a Flask y MySQL.
 
-### Administrador
-- Visualizar un dashboard con gráficas de ventas por fecha, estados de pedidos y productos vendidos.
-- Consultar clientes, importe histórico de compras, productos más y menos comprados, cancelaciones y rechazos; activar y desactivar cuentas **sin editar sus datos personales**.
-- Gestionar productos, materiales, proveedores, compras, costos base, inventario y recetas de fabricación.
-- Revisar y autorizar pedidos.
-- Planificar órdenes de producción, registrar consumo de materiales y finalización de productos.
-- Programar recolecciones, liquidar saldos simulados y registrar entregas.
+## Arquitectura y requisitos
 
-### PWA
-- Instalable desde Chrome como aplicación independiente con iconos y colores de Toco Madera.
-- Manifiesto web y Service Worker de Angular en la compilación de producción.
-- Caché de recursos estáticos para apertura básica sin conexión, según los recursos previamente almacenados.
-- **La API Flask, los datos privados, compras y operaciones administrativas no están disponibles sin el backend y MySQL accesibles.**
-
-## Catálogo base
-
-1. Portateléfonos.
-2. Marcos para fotografías.
-3. Rodillos de cocina.
-4. Repisas.
-5. Portallaves.
-6. Placas de escritorio.
-
-## Tecnologías
-
-| Capa | Tecnologías |
+| Capa | Componentes |
 | --- | --- |
-| Frontend | Angular 22, TypeScript, Angular Router, Signals, HttpClient |
-| Estilos | Tailwind CSS 4, Flowbite 4 |
-| Gráficas | Chart.js 4 |
-| PWA | Angular Service Worker, `manifest.webmanifest`, `ngsw-config.json` |
-| Backend | Python 3.11.9, Flask 3, Blueprints, JWT, Flask-SQLAlchemy |
-| Base de datos | MySQL 8, PyMySQL |
-| Herramientas | VS Code, Windows 11, PowerShell, Git, GitHub, MySQL Workbench |
+| Navegador | Angular 22 standalone, Angular Router, Signals, Tailwind CSS 4, Flowbite 4, Chart.js y Angular Service Worker |
+| API local | Python 3.11.9, Flask con Blueprints, Flask-SQLAlchemy, PyMySQL y JWT |
+| Datos | MySQL 8. La instancia de desarrollo se verificó con 8.4.8 |
 
-## Arquitectura
+Angular sirve la tienda y el layout administrativo en `localhost:4200`. Flask atiende `http://127.0.0.1:5000/api/v1` y comprueba los roles de cliente y administrador. Node.js 24.20.0 y npm 11.19.0 se usaron para la validación local.
 
-```text
-PWA / Navegador Angular (localhost:4200)
-      │  HTTP JSON + Bearer JWT
-      ▼
-API Flask (127.0.0.1:5000, /api/v1)
-      │
-      ▼
-MySQL 8 (toco_madera)
-```
+## Inicio local en Windows
 
-## Requisitos
-
-- Node.js compatible con Angular 22 y npm.
-- Python 3.11.9 y pip.
-- MySQL Server 8 con la base de datos `toco_madera` creada.
-- Chrome reciente para instalar y probar la PWA.
-- Conexión local para que Angular consulte Flask y MySQL.
-
-## Instalación local
-
-### 1. Clonar el código
-
-```powershell
-git clone https://github.com/CyberSpark-dev/toco-madera.git
-cd toco-madera
-```
-
-### 2. Configurar MySQL
-
-Los scripts de estructura y desarrollo se encuentran en `database/`. El respaldo exportado desde MySQL Workbench para la entrega v1.0 se guardó en `database/DB_actualizada_v1.0/DB_toco_madera_app.sql` (archivo reportado el 21 de noviembre de 2026). **Antes de restaurarlo, revisa si contiene estructura, datos o ambos**; la ubicación y el tamaño del archivo por sí solos no lo demuestran. No ejecutes un archivo SQL potencialmente destructivo sobre una base con registros que quieras conservar.
-
-Crear `backend/.env` **localmente** (no subir a GitHub):
+1. Configura MySQL con un esquema verificado. Para una instalación nueva consulta [la guía de base de datos](database/README.md). Utiliza un usuario de aplicación con permisos sobre el esquema correspondiente.
+2. Copia `backend/.env.example` como `backend/.env` si el archivo local aún no existe. Genera una clave aleatoria local y configura estos valores con tus propias credenciales.
 
 ```dotenv
-SECRET_KEY=REEMPLAZAR_CON_UNA_CLAVE_ALEATORIA_LARGA
+SECRET_KEY=CLAVE_ALEATORIA_GENERADA_LOCALMENTE
 DATABASE_URL=mysql+pymysql://USUARIO:CONTRASENA@127.0.0.1:3306/toco_madera?charset=utf8mb4
 ```
 
-### 3. Ejecutar Flask
+Conserva `.env`, tokens y respaldos con datos fuera del control de versiones. Flask utiliza `SECRET_KEY` para firmar los JWT. Codifica los caracteres reservados de la contraseña al construir la URL.
+
+Desde la raíz, inicia Flask y deja la terminal abierta.
 
 ```powershell
 cd backend
@@ -104,131 +42,58 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe run.py
 ```
 
-API local: `http://127.0.0.1:5000/api/v1/health`. Mantener esta terminal abierta.
-
-### 4. Ejecutar Angular en desarrollo
-
-En otra terminal desde la raíz del repositorio:
+Comprueba `http://127.0.0.1:5000/api/v1/health`. En otra terminal, desde la raíz:
 
 ```powershell
 cd frontend
-npm install
-npm start
+npm.cmd ci
+npm.cmd start
 ```
 
-Abrir `http://localhost:4200`.
+Abre `http://localhost:4200/`. Las rutas de cliente incluyen `/cliente/carrito`, `/cliente/checkout`, `/cliente/mis-pedidos` y `/cliente/mi-cuenta`. La administración comienza en `/admin/dashboard`. El router completo se encuentra en `frontend/src/app/app.routes.ts`.
 
-### 5. Compilar e instalar la PWA
+## Pruebas y compilación
 
-En `frontend`, detener `npm start` y ejecutar:
+Desde `frontend`:
 
 ```powershell
-npx ng build --configuration production
-Get-ChildItem dist -Recurse -Filter index.html
-Get-ChildItem dist -Recurse -Filter ngsw.json
-Get-ChildItem dist -Recurse -Filter ngsw-worker.js
+npx.cmd ng test --watch=false
+npx.cmd ng build --configuration production
 ```
 
-Si `index.html` está en `dist/frontend/browser`, servir la compilación:
+Desde `backend`:
 
 ```powershell
-npx --yes serve@14 -s dist/frontend/browser -l 4200
+.\.venv\Scripts\python.exe -B -m unittest discover -s tests -p '*unidad.py'
 ```
 
-Abrir `http://localhost:4200` → Chrome → **F12 → Application**. Comprobar **Manifest** y **Service Workers**. Instalar «Toco Madera» desde el menú de Chrome cuando esté disponible. Conservar el servidor de Angular, Flask y MySQL encendidos para la demostración funcional.
+Para integración con escrituras usa exclusivamente una copia MySQL identificada y certificada, con cuenta de pruebas limitada. Consulta [el procedimiento de compras asistidas](docs/COMPRAS-ASISTIDAS-PRUEBAS.md). Los respaldos con registros deben permanecer en una carpeta privada, y toda restauración se ensaya primero en un destino aislado.
 
-## Rutas principales
+## Instalación PWA y demostración en Android
 
-| Ruta | Propósito |
-| --- | --- |
-| `/` | Inicio y catálogo |
-| `/registro` | Alta de cliente |
-| `/login` | Inicio de sesión |
-| `/cliente/carrito` | Carrito |
-| `/cliente/checkout` | Confirmación y pago simulado |
-| `/cliente/mis-pedidos` | Historial y cancelaciones |
-| `/cliente/mi-cuenta` | Datos y contraseña |
-| `/admin/dashboard` | Estadísticas |
-| `/admin/clientes` | Consulta y activación/desactivación de clientes |
-| `/admin/pedidos` | Revisión administrativa |
-| `/admin/operaciones` | Producción y entregas |
-
-Las demás rutas administrativas están declaradas en `frontend/src/app/app.routes.ts`.
-
-## Seguridad y límites
-
-- JWT y autorización por roles; la protección de rutas Angular **no sustituye** el control de permisos en Flask.
-- Las contraseñas se almacenan con hash, no en texto plano.
-- Los datos de tarjeta y transferencia son exclusivamente **valores ficticios**; no se procesan pagos bancarios.
-- No publicar `backend/.env`, tokens, claves, archivos de entornos virtuales ni datos personales reales.
-- La baja de clientes es lógica para preservar el historial comercial.
-- Las cancelaciones conservan el historial y están limitadas por el estado operativo del pedido.
-- El Service Worker no debe cachear endpoints privados `/api/v1/`.
-- La demostración local funciona sin acceso a internet si todos los servicios locales están disponibles, pero la consulta dinámica a MySQL **no es una funcionalidad offline autónoma**.
-
-## Base de datos y respaldos — v1.0
-
-Se exportó manualmente desde **MySQL Workbench** un archivo SQL actualizado y se colocó en:
-
-```text
-toco-madera/
-└── database/
-    └── DB_actualizada_v1.0/
-        └── DB_toco_madera_app.sql
-```
-
-**Fecha de exportación informada:** 21 de noviembre de 2026. **Tamaño aproximado visible:** 58 KB. **Estado:** archivo presente según captura de Windows, pero su contenido y capacidad de restauración no están validados en este README.
-
-### Comprobar el contenido del respaldo
-
-Abre el SQL en VS Code y verifica si contiene sentencias como `CREATE TABLE` (estructura), `INSERT INTO` (datos), `CREATE TRIGGER` (disparadores) y `CREATE PROCEDURE` (procedimientos). La presencia de datos históricos debe verificarse directamente en el archivo o mediante una restauración de prueba.
+Sirve la compilación de `frontend/dist/frontend/browser` en `localhost:4200`, con fallback a `index.html` para rutas Angular. Por ejemplo, desde `frontend`, con el servidor de desarrollo detenido:
 
 ```powershell
-# Desde la raíz de toco-madera
-Get-Item 'database/DB_actualizada_v1.0/DB_toco_madera_app.sql'
-Select-String -Path 'database/DB_actualizada_v1.0/DB_toco_madera_app.sql' -Pattern 'CREATE TABLE|INSERT INTO|CREATE TRIGGER|CREATE PROCEDURE' | Select-Object -First 20
+npx.cmd --yes serve@14 -s dist/frontend/browser -l tcp://127.0.0.1:4200
 ```
 
-Para confirmar que el archivo es restaurable, impórtalo **primero a una base de prueba aislada** (o utiliza un servidor de pruebas) y compara tablas y registros. Evita restaurarlo directamente sobre la base de la exposición sin respaldo previo.
+En Chrome comprueba el manifiesto y el Service Worker en **DevTools → Application**. En Android físico usa depuración USB, verifica `adb devices` y reenvía los puertos locales:
 
-### Política de publicación en GitHub
+```powershell
+adb reverse tcp:4200 tcp:4200
+adb reverse tcp:5000 tcp:5000
+```
 
-Un volcado con `INSERT INTO` puede contener nombres, correos, teléfonos, hashes de contraseñas, pedidos y otros datos. **No lo publiques automáticamente**, aunque las cuentas sean de demostración. Antes de usar `git add .`:
+Abre `http://localhost:4200/` en Chrome del teléfono. Pulsa **Instalar Toco Madera** o usa la opción de Chrome si el navegador ofrece solo la vía manual. Comprueba el icono y la apertura en modo independiente. [Guía de PWA y grabado](docs/INSTALACION-PWA-Y-ESTILOS.md).
 
-1. Conserva una copia completa del volcado en un lugar privado fuera del repositorio.
-2. Si el archivo contiene datos personales o de autenticación, excluye `database/DB_actualizada_v1.0/DB_toco_madera_app.sql` en `.gitignore`.
-3. Genera una exportación de **solo estructura** para el repositorio (Workbench: *Data Export → Dump Structure Only*), por ejemplo `database/toco_madera_v1.0_schema.sql`. Inspecciona el SQL por si los procedimientos, vistas o comentarios contienen secretos.
-4. Si quieres que GitHub incluya un conjunto de datos demostrativos, utiliza un script `seed` preparado con registros inventados y contraseñas de prueba no reutilizadas.
+## Límites y pendientes
 
-### Recuperación de la base de datos
+- Los pagos y las liquidaciones son simulados. Las cancelaciones conservan el historial sin devolución.
+- La instalación se prueba con la compilación de producción en localhost. Para un despliegue eventual hacen falta HTTPS y una configuración de API apropiada para el dominio. La instalación y el recorrido integral en un Android físico siguen pendientes.
+- Los importes de producto, pedido y pago usan centavos. Los costos unitarios de materiales y las cantidades pueden requerir cuatro decimales. La interfaz muestra importes en MXN a dos decimales y las aproximaciones físicas conservan aviso cuando corresponde.
+- El histórico contiene fracciones con unidad `PZA`. Su normalización exige revisar la unidad real del material y su efecto en recetas y movimientos. El catálogo aplica la descripción vigente del rodillo al texto inicial legado al leerlo. Las descripciones editadas permanecen disponibles tal como se guardaron.
+- Los subtotales del carrito son estimaciones. Flask verifica el precio vigente y calcula el importe definitivo con `Decimal`.
 
-La base usada en desarrollo se llama `toco_madera`. Para migrar a otro equipo, primero crea/configura MySQL 8, restaura un esquema verificado y carga datos de ejemplo o un respaldo privado **solo después de comprobar que sea seguro y compatible**. El repositorio no debe depender de tener registros personales históricos públicos.
+Consulta los [pendientes de la versión](docs/PENDIENTES-v1.1.md) y la [referencia del carrusel](docs/ESCENAS-INICIO.md).
 
-## Validación antes de la exposición
-
-- [ ] `npm install` y `ng build --configuration production` terminan correctamente.
-- [ ] Chrome muestra el manifiesto y el Service Worker activado.
-- [ ] La PWA se instala y se abre desde el escritorio.
-- [ ] Inicio, catálogo y seis imágenes se muestran.
-- [ ] Registro, login, «Mi cuenta» y carrito funcionan.
-- [ ] Checkout simulado, cancelación e historial funcionan.
-- [ ] Administración de clientes, pedidos, inventario, producción y entregas funcionan.
-- [ ] Gráficas consultan los datos actuales de MySQL.
-- [ ] Se inspeccionó `database/DB_actualizada_v1.0/DB_toco_madera_app.sql` y se probó su restauración de forma aislada.
-- [ ] Se verificó que no haya datos sensibles incluidos en GitHub.
-- [ ] Se verificó el último commit y tag en GitHub.
-
-## Publicación y versión
-
-- **Versión:** `1.0.0` (entrega académica).
-- **Commit sugerido:** `PWA Toco Madera v1.0`.
-- **Tag sugerido:** `v1.0.0` (crearlo solo después de confirmar el push).
-- **Repositorio:** https://github.com/CyberSpark-dev/toco-madera
-
-## Autor
-
-**Angel Torres**
-
----
-
-*Nota de verificación: este README integra el estado descrito en el proyecto y las últimas etapas implementadas durante la conversación. No constituye una certificación de pruebas automatizadas ni de despliegue en producción.*
+**Autor:** Angel Torres

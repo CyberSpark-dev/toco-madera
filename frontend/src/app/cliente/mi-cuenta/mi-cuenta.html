@@ -1,6 +1,6 @@
 <main class="min-h-screen bg-crema px-5 py-10 text-nogal">
   <div class="mx-auto max-w-3xl space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3"><h1 class="text-3xl font-bold">Mi cuenta</h1><a routerLink="/" class="rounded-lg border border-terracota px-4 py-2 font-semibold">Volver a la tienda</a></div>
+    <div class="flex flex-wrap items-center justify-between gap-3"><app-identidad-toco-madera /><h1 class="text-3xl font-bold">Mi cuenta</h1><a routerLink="/" class="rounded-lg border border-terracota px-4 py-2 font-semibold">Volver a la tienda</a></div>
     @if (error()) { <p role="alert" class="rounded-lg bg-red-50 p-4 text-red-800">{{ error() }}</p> }
     @if (aviso()) { <p role="status" class="rounded-lg bg-green-50 p-4 text-green-800">{{ aviso() }}</p> }
     <form (ngSubmit)="guardarDatos()" class="space-y-4 rounded-xl bg-white p-6 shadow-sm">

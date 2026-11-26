@@ -1,3 +1,6 @@
+import { mensajeNotificable } from '../../core/services/notificaciones';
+import { mensajeError } from '../../core/utils/mensajes';
+import { formatearDinero } from '../../core/utils/dinero';
 /**
  * ======================================================
  * TOCO MADERA - GESTIÓN DE RECETAS
@@ -18,7 +21,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 
 import {
@@ -30,20 +33,24 @@ import {
 } from '../../core/services/admin-recetas';
 
 import { Auth } from '../../core/services/auth';
+import { AdminMateriales, UnidadMedida } from '../../core/services/admin-materiales';
+import { formatearCantidad } from '../../core/utils/cantidades';
 
 @Component({
   selector: 'app-recetas-admin',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule],
   templateUrl: './recetas.html',
   styleUrl: './recetas.css',
 })
 export class RecetasAdmin implements OnInit {
+  readonly dinero = formatearDinero;
   // ====================================================
   // 1. SERVICIOS
   // ====================================================
 
   private readonly api = inject(AdminRecetas);
+  private readonly materialesApi = inject(AdminMateriales);
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
 
@@ -54,6 +61,7 @@ export class RecetasAdmin implements OnInit {
   readonly recetas = signal<RecetaAdmin[]>([]);
   readonly productos = signal<ProductoReceta[]>([]);
   readonly materiales = signal<MaterialRecetaCatalogo[]>([]);
+  private readonly unidades = signal<UnidadMedida[]>([]);
 
   // ====================================================
   // 3. CONTROL DE INTERFAZ
@@ -63,8 +71,8 @@ export class RecetasAdmin implements OnInit {
   readonly cargandoCatalogos = signal(true);
   readonly guardando = signal(false);
 
-  readonly error = signal('');
-  readonly mensaje = signal('');
+  readonly error = mensajeNotificable('error');
+  readonly mensaje = mensajeNotificable('exito');
 
   readonly mostrarFormulario = signal(false);
 
@@ -158,6 +166,10 @@ export class RecetasAdmin implements OnInit {
   // ====================================================
 
   cargarCatalogos(): void {
+    this.materialesApi.listarUnidades().subscribe({
+      next: ({ unidades }) => this.unidades.set(unidades),
+      error: () => this.unidades.set([]),
+    });
     this.cargandoCatalogos.set(true);
 
     this.api.catalogos().subscribe({
@@ -394,7 +406,7 @@ export class RecetasAdmin implements OnInit {
         this.guardando.set(false);
         this.mostrarFormulario.set(false);
 
-        this.mensaje.set(respuesta.message);
+        this.mensaje.set('Receta registrada correctamente.');
         this.cargarRecetas();
 
         window.scrollTo({
@@ -441,7 +453,7 @@ export class RecetasAdmin implements OnInit {
         this.guardando.set(false);
         this.recetaPendiente.set(null);
 
-        this.mensaje.set(respuesta.message);
+        this.mensaje.set('La versión de la receta se activó correctamente.');
         this.cargarRecetas();
       },
 
@@ -470,6 +482,21 @@ export class RecetasAdmin implements OnInit {
       `Material ${idMaterial}`
     );
   }
+
+  productoFormulario(): ProductoReceta | undefined {
+    return this.productos().find((producto) => producto.id_producto === this.formulario.id_producto);
+  }
+
+  unidadIngrediente(idMaterial: number): string {
+    const idUnidad = this.materiales().find((material) => material.id_material === idMaterial)?.id_unidad;
+    return idUnidad === undefined ? 'Unidad sin identificar' : this.nombreUnidad(idUnidad);
+  }
+
+  nombreUnidad(idUnidad: number): string {
+    return this.unidades().find((unidad) => unidad.id_unidad === idUnidad)?.nombre ?? `Unidad #${idUnidad}`;
+  }
+
+  readonly cantidadTexto = formatearCantidad;
 
   // Costo por unidad usando los tiempos registrados.
   // No incluye costo de materias primas.
@@ -500,7 +527,7 @@ export class RecetasAdmin implements OnInit {
       return;
     }
 
-    this.error.set(typeof error.error?.message === 'string' ? error.error.message : predeterminado);
+    this.error.set(mensajeError(error, predeterminado));
   }
 
   cerrarSesion(): void {

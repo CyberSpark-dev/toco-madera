@@ -1,3 +1,5 @@
+import { IdentidadTocoMadera } from '../../core/ui/identidad-toco-madera';
+import { formatearDinero } from '../../core/utils/dinero';
 /**
  * ============================================================
  * TOCO MADERA - PÁGINA DE INICIO DEL CLIENTE
@@ -28,9 +30,9 @@
  * ============================================================
  */
 
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DOCUMENT, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { mensajeNotificable, Notificaciones } from '../../core/services/notificaciones';
 
-import { CurrencyPipe } from '@angular/common';
 
 import { Router, RouterLink } from '@angular/router';
 
@@ -53,12 +55,13 @@ import { CarritoService } from '../../core/services/carrito';
 // ============================================================
 
 import { imagenProducto } from '../../core/utils/imagenes-productos';
+import { InstalacionPwaVista } from '../../core/services/instalacion-pwa-vista';
 
 @Component({
   selector: 'app-inicio',
   standalone: true,
 
-  imports: [RouterLink, CurrencyPipe],
+  imports: [IdentidadTocoMadera, RouterLink, InstalacionPwaVista],
 
   templateUrl: './inicio.html',
   styleUrl: './inicio.css',
@@ -73,6 +76,7 @@ export class Inicio implements OnInit {
 
   // Carrito existente: conserva artículos en localStorage.
   readonly carrito = inject(CarritoService);
+  readonly notificaciones = inject(Notificaciones);
 
   // Servicio público de productos.
   private readonly catalogoApi = inject(CatalogoCarritoService);
@@ -86,7 +90,7 @@ export class Inicio implements OnInit {
 
   readonly nombreEmpresa = 'Toco Madera';
 
-  readonly eslogan = 'Frases que vienen de raíz y se graban en el corazón.';
+  readonly eslogan = 'Frases que vienen de raíz y se guardan en el corazón';
 
   // ==========================================================
   // 3. SIGNALS DEL CATÁLOGO
@@ -99,13 +103,99 @@ export class Inicio implements OnInit {
   readonly cargandoProductos = signal(true);
 
   // Mensaje visible si ocurre una falla.
-  readonly errorProductos = signal('');
+  readonly errorProductos = mensajeNotificable('error');
+  readonly indiceDestacado = signal(0);
+  readonly escenas: readonly {
+    titulo: string; alt: string; foto: string; posicion: string;
+    destino: 'nosotros' | 'catalogo'; sku?: string;
+  }[] = [
+    { titulo: 'El trabajo detrás de cada pieza', alt: 'Artesano tallando un portallaves de madera en el taller',
+      foto: '/productos/inicio/taller-artesanal.webp', posicion: '78% 50%', destino: 'nosotros' },
+    { titulo: 'Un regalo para recordar', alt: 'Familia mostrando un marco de madera que acaba de abrir como regalo',
+      foto: '/productos/inicio/familia-regalo-artesanal.webp', posicion: '43% 50%', destino: 'catalogo' },
+    {
+      titulo: 'Detalles que distinguen cada pieza', alt: 'Placa de madera con grabado y acabado visibles sobre un escritorio',
+      foto: '/productos/placa_escritorio.png', posicion: '50% 48%', destino: 'catalogo', sku: 'TM-PE-01',
+    },
+    {
+      titulo: 'Recuerdos hechos para quedarse', alt: 'Marco de madera grabado con un retrato familiar',
+      foto: '/productos/marco_fotografias.png', posicion: '50% 38%', destino: 'catalogo', sku: 'TM-MF-01',
+    },
+  ];
+  readonly escena = computed(() => this.escenas[this.indiceDestacado()]);
+  private readonly documento = inject(DOCUMENT);
+  private readonly destruir = inject(DestroyRef);
+  private readonly movimiento = this.documento.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)');
+  private temporizador?: ReturnType<typeof setTimeout>;
+  private cursor = false;
+  private foco = false;
+  readonly movimientoReducido = signal(!!this.movimiento?.matches);
+  readonly rotando = signal(false);
+
+  desplazarDestacado(paso: -1 | 1): void {
+    this.cambiarEscena(paso);
+    this.programarCarrusel();
+  }
+
+  private cambiarEscena(paso: -1 | 1): void {
+    const total = this.escenas.length;
+    this.indiceDestacado.update((indice) => (indice + paso + total) % total);
+  }
+
+  cursorCarrusel(dentro: boolean): void {
+    this.cursor = dentro;
+    this.programarCarrusel();
+  }
+
+  focoCarrusel(dentro: boolean, evento?: FocusEvent): void {
+    if (!dentro && evento?.relatedTarget instanceof Node &&
+        (evento.currentTarget as HTMLElement).contains(evento.relatedTarget)) return;
+    this.foco = dentro && (!evento || (evento.target as HTMLElement).matches(':focus-visible'));
+    this.programarCarrusel();
+  }
+
+  private programarCarrusel(): void {
+    clearTimeout(this.temporizador);
+    const activo = !this.cursor && !this.foco && !this.documento.hidden &&
+      !this.movimientoReducido();
+    this.rotando.set(activo);
+    if (!activo) return;
+    this.temporizador = setTimeout(() => {
+      this.cambiarEscena(1);
+      this.programarCarrusel();
+    }, 6000);
+  }
+
+  irAEscena(): void {
+    const escena = this.escena();
+    if (escena.destino === 'nosotros') {
+      this.enfocarDestino(document.getElementById('titulo-nosotros'));
+      return;
+    }
+    const producto = this.productos().find((p) => p.sku === escena.sku);
+    const tarjeta = producto && document.querySelector<HTMLElement>(`#producto-${producto.id_producto} h3`);
+    if (tarjeta) this.enfocarDestino(tarjeta);
+    else this.irAlCatalogo();
+  }
 
   // ==========================================================
   // 4. INICIALIZACIÓN
   // ==========================================================
 
   ngOnInit(): void {
+    const visibilidad = () => this.programarCarrusel();
+    const preferencia = (evento: MediaQueryListEvent) => {
+      this.movimientoReducido.set(evento.matches);
+      this.programarCarrusel();
+    };
+    this.documento.addEventListener('visibilitychange', visibilidad);
+    this.movimiento?.addEventListener?.('change', preferencia);
+    this.destruir.onDestroy(() => {
+      clearTimeout(this.temporizador);
+      this.documento.removeEventListener('visibilitychange', visibilidad);
+      this.movimiento?.removeEventListener?.('change', preferencia);
+    });
+    this.programarCarrusel();
     // Consultar los productos al abrir la tienda.
     this.cargarProductos();
   }
@@ -144,9 +234,7 @@ export class Inicio implements OnInit {
         if (error instanceof HttpErrorResponse) {
           if (error.status === 0) {
             this.errorProductos.set(
-              'No es posible conectar con Flask. ' +
-                'Verifica que el backend esté encendido ' +
-                'en el puerto 5000.',
+              'No pudimos cargar el catálogo. Inténtalo nuevamente.',
             );
           } else {
             this.errorProductos.set('El servidor no pudo consultar ' + 'el catálogo de productos.');
@@ -174,14 +262,14 @@ export class Inicio implements OnInit {
    * hasta la sección del catálogo.
    */
   irAlCatalogo(): void {
-    const seccion = document.getElementById('catalogo');
+    this.enfocarDestino(document.getElementById('titulo-catalogo'));
+  }
 
-    if (!seccion) {
-      return;
-    }
-
-    seccion.scrollIntoView({
-      behavior: 'smooth',
+  private enfocarDestino(destino: HTMLElement | null): void {
+    if (!destino) return;
+    destino.focus({ preventScroll: true });
+    destino.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
       block: 'start',
     });
   }
@@ -230,20 +318,5 @@ export class Inicio implements OnInit {
     this.router.navigateByUrl('/');
   }
 
-  // ==========================================================
-  // 8. FORMATEAR IMPORTES
-  // ==========================================================
-
-  /**
-   * Disponible para cálculos auxiliares.
-   *
-   * El HTML utiliza principalmente CurrencyPipe.
-   * Los precios definitivos se validan en Flask.
-   */
-  formatearPrecio(valor: string | number): string {
-    return Number(valor).toLocaleString('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-    });
-  }
+  readonly formatearPrecio = formatearDinero;
 }

@@ -1,3 +1,7 @@
+import { mensajeNotificable } from '../../core/services/notificaciones';
+import { imagenProducto } from '../../core/utils/imagenes-productos';
+import { mensajeError } from '../../core/utils/mensajes';
+import { formatearDinero } from '../../core/utils/dinero';
 /**
  * ==========================================================
  * TOCO MADERA - ADMINISTRACIÓN DE PRODUCTOS
@@ -21,10 +25,9 @@
 
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 
-import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -45,12 +48,14 @@ import { Auth } from '../../core/services/auth';
   selector: 'app-productos-admin',
   standalone: true,
 
-  imports: [FormsModule, RouterLink, CurrencyPipe],
+  imports: [FormsModule],
 
   templateUrl: './productos.html',
   styleUrl: './productos.css',
 })
 export class ProductosAdmin implements OnInit {
+  readonly dinero = formatearDinero;
+  readonly fotoProducto = imagenProducto;
   // ========================================================
   // 1. SERVICIOS
   // ========================================================
@@ -72,11 +77,11 @@ export class ProductosAdmin implements OnInit {
   guardando = signal(false);
 
   // Mensajes generales.
-  error = signal('');
-  mensaje = signal('');
+  error = mensajeNotificable('error');
+  mensaje = mensajeNotificable('exito');
 
   // Error exclusivo del formulario.
-  errorFormulario = signal('');
+  errorFormulario = mensajeNotificable('error');
 
   // Error exclusivo de categorías.
   errorCategorias = signal('');
@@ -179,7 +184,7 @@ export class ProductosAdmin implements OnInit {
         // Informar si Flask no devolvió categorías.
         if (respuesta.categorias.length === 0) {
           this.errorCategorias.set(
-            'No existen categorías disponibles. ' + 'Verifica la tabla categorias en MySQL.',
+            'No hay categorías disponibles. Selecciona una cuando esté disponible.',
           );
         }
       },
@@ -189,7 +194,7 @@ export class ProductosAdmin implements OnInit {
         this.categorias.set([]);
 
         this.errorCategorias.set(
-          'No fue posible consultar las categorías. ' + 'Comprueba el endpoint administrativo.',
+          'No pudimos cargar las categorías. Inténtalo nuevamente.',
         );
 
         // Un problema de permisos requiere redirección.
@@ -430,7 +435,7 @@ export class ProductosAdmin implements OnInit {
         this.errorFormulario.set('');
 
         // Mostrar confirmación.
-        this.mensaje.set(respuesta.message);
+        this.mensaje.set(idProducto === null ? 'Producto registrado correctamente.' : 'Los cambios se guardaron correctamente.');
 
         // Actualizar tabla desde MySQL.
         this.cargarProductos();
@@ -456,9 +461,7 @@ export class ProductosAdmin implements OnInit {
         // Mostrar errores de Flask junto
         // al botón de guardar.
         const mensajeServidor =
-          typeof error.error?.message === 'string'
-            ? error.error.message
-            : 'No fue posible guardar el producto.';
+          mensajeError(error, 'No fue posible guardar el producto.');
 
         this.errorFormulario.set(mensajeServidor);
       },
@@ -508,7 +511,7 @@ export class ProductosAdmin implements OnInit {
         this.guardando.set(false);
         this.productoPendiente.set(null);
 
-        this.mensaje.set(respuesta.message);
+        this.mensaje.set(nuevoEstado ? 'Producto activado correctamente.' : 'Producto desactivado correctamente.');
 
         this.cargarProductos();
       },
@@ -545,9 +548,7 @@ export class ProductosAdmin implements OnInit {
       return;
     }
 
-    const mensajeServidor = typeof error.error?.message === 'string' ? error.error.message : null;
-
-    this.error.set(mensajeServidor ?? mensajePredeterminado);
+    this.error.set(mensajeError(error, mensajePredeterminado));
   }
 
   // ========================================================

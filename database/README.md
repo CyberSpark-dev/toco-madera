@@ -1,34 +1,27 @@
-# Base de datos — Toco Madera
+# Base de datos de Toco Madera v1.1
 
-## Requisitos
+MySQL 8 aloja el esquema relacional. Flask se conecta mediante PyMySQL y SQLAlchemy con `DATABASE_URL`, definida en el archivo privado `backend/.env`.
 
-- MySQL Server 8.
-- MySQL Workbench.
-- Python 3.11.9.
-- Flask, Flask-SQLAlchemy y PyMySQL.
+## Instalación limpia
 
-## Configuración inicial
+Prepara una instancia vacía destinada al proyecto. Revisa los scripts antes de ejecutarlos. Varios contienen el nombre literal `toco_madera`; verifica el servidor y el destino en la sesión MySQL.
 
-1. Abrir MySQL Workbench.
-2. Conectarse al servidor MySQL local.
-3. Ejecutar `01_crear_base_datos.sql`.
-4. Crear un usuario técnico para Flask con permisos sobre `toco_madera`.
-5. Configurar la variable `DATABASE_URL` en `backend/.env`.
-6. Verificar que Flask pueda consultar `SELECT DATABASE()`.
+1. `01_schema.sql` crea el esquema, las tablas y las vistas de base.
+2. `01_punto_recoleccion.sql` añade una vez el punto de recolección a `entregas`.
+3. `01_autorizaciones_pedido.sql` agrega el registro de decisiones del taller.
+4. `02_seed.sql` carga el catálogo y las referencias demostrativas de una instalación nueva. Ejecútalo una sola vez.
+5. `migrations/20261125_01_compras_asistidas.sql` amplía compras y detalles. Verifica que sus columnas aún no existan. Para un esquema existente consulta el [procedimiento protegido](../docs/COMPRAS-ASISTIDAS-PRUEBAS.md).
 
-## Variables de entorno
+Las referencias de tipografías seleccionables y devoluciones quedan fuera del despliegue. El grabado usa el campo original de texto. La cancelación cambia el estado del pedido y conserva los pagos.
 
-La configuración local debe incluir:
+## Unidades y precisión
 
-```dotenv
-SECRET_KEY=CLAVE_GENERADA_LOCALMENTE
-DATABASE_URL=mysql+pymysql://USUARIO:CONTRASENA@localhost:3306/toco_madera?charset=utf8mb4
-```
+La unidad base reside en `materiales.id_unidad`. Para una cotización se registra cuánta unidad base contiene una presentación. Compras asistidas acepta cotizaciones MXN clasificadas como cotizadas, del proveedor y material seleccionados, cuando el precio se puede expresar exactamente con el costo unitario disponible. El número de presentaciones es entero. La recepción registra la cantidad resultante en unidad base.
 
-**Importante:** no subir a GitHub las contraseñas reales ni el archivo `.env`.
+MySQL conserva cantidades físicas y costos unitarios de materiales con cuatro decimales. Los precios de catálogo, precios acordados, precios por presentación y montos de pago usan dos decimales. La visualización a centavos no reescribe el costo original.
 
-## Estado actual
+La auditoría de cierre en solo lectura detectó fracciones históricas en `PZA`, seis renglones de receta y seis movimientos, así como siete costos unitarios de compra con más de dos decimales significativos. Esos valores se preservaron.
 
-La base de datos `toco_madera` está creada y se ha comprobado la conexión desde Flask utilizando SQLAlchemy.
+## Respaldo y pruebas
 
-Las tablas, claves foráneas, relaciones y datos iniciales se incorporarán durante la Etapa 2.6.
+Guarda los respaldos y las credenciales fuera del repositorio. Verifica huellas, objetos y registros con una restauración aislada antes de usar un respaldo para recuperación. El volcado v1.0 es una referencia histórica que debe revisarse antes de cualquier publicación o uso. Las pruebas con escrituras comprueban el UUID, puerto, esquema y directorio del destino aislado. Consulta la [guía de pruebas](../docs/COMPRAS-ASISTIDAS-PRUEBAS.md).
