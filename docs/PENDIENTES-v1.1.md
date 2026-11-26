@@ -1,4 +1,4 @@
-# Cierre de Toco Madera v1.1
+# Cierre de v1.1 y pendientes para Toco Madera v2.0.0
 
 - [x] Refinar Inicio, catálogo, footer y carrusel con movimiento reducido.
 - [x] Integrar la vista previa de grabado decorativo y conservar el texto en carrito, checkout y pedido.

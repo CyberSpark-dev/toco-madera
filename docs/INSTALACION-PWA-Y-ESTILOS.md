@@ -12,4 +12,4 @@
 
 El cliente puede personalizar el texto y ver el grabado con Great Vibes sobre las seis bases limpias. La zona del rodillo está centrada en el cuerpo cilíndrico. Checkout envía el texto validado y utiliza la columna original de grabado.
 
-El archivo `database/migrations/20261126_01_estilo_grabado.sql` se conserva como referencia del ensayo aislado anterior. Esta migración está cancelada para la base principal y no forma parte del procedimiento de despliegue.
+El archivo `database/migraciones-canceladas/20261126_01_estilo_grabado.sql` se conserva comentado como referencia del ensayo aislado anterior. Está cancelado y queda fuera del procedimiento de despliegue.

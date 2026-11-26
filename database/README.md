@@ -1,4 +1,4 @@
-# Base de datos de Toco Madera v1.1
+# Base de datos de Toco Madera v2.0.0
 
 MySQL 8 aloja el esquema relacional. Flask se conecta mediante PyMySQL y SQLAlchemy con `DATABASE_URL`, definida en el archivo privado `backend/.env`.
 

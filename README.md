@@ -1,4 +1,4 @@
-# Toco Madera v1.1
+# Toco Madera v2.0.0
 
 > Frases que vienen de raíz y se guardan en el corazón
 
@@ -94,6 +94,6 @@ Abre `http://localhost:4200/` en Chrome del teléfono. Pulsa **Instalar Toco Mad
 - El histórico contiene fracciones con unidad `PZA`. Su normalización exige revisar la unidad real del material y su efecto en recetas y movimientos. El catálogo aplica la descripción vigente del rodillo al texto inicial legado al leerlo. Las descripciones editadas permanecen disponibles tal como se guardaron.
 - Los subtotales del carrito son estimaciones. Flask verifica el precio vigente y calcula el importe definitivo con `Decimal`.
 
-Consulta los [pendientes de la versión](docs/PENDIENTES-v1.1.md) y la [referencia del carrusel](docs/ESCENAS-INICIO.md).
+Consulta la [entrega de v2.0.0](docs/ENTREGA-v2.0.0.md), los [pendientes de la versión](docs/PENDIENTES-v1.1.md) y la [referencia del carrusel](docs/ESCENAS-INICIO.md).
 
-**Autor:** Angel Torres
+**Equipo:** Angel Torres, Braulio Ríos, Arturo Landeros y Emiliano Barajas.

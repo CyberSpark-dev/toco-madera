@@ -1,4 +1,4 @@
-# Frontend de Toco Madera v1.1
+# Frontend de Toco Madera v2.0.0
 
 Angular 22 standalone, Tailwind CSS 4 y Flowbite 4. Consulta el [README principal](../README.md) para iniciar Flask y MySQL, conocer las rutas y preparar la demostración Android.
 
